@@ -1,0 +1,150 @@
+{
+    "areas": {
+        "EC": {
+            "Pyramidal": {
+                "N": 50,
+                "type": "Exc"
+            },
+            "Basket": {
+                "N": 6,
+                "type": "Inh"
+            },
+            "OLM": {
+                "N": 2,
+                "type": "Inh"
+            }
+        },
+        "DG": {
+            "Granule": {
+                "N": 100,
+                "type": "Exc"
+            },
+            "Basket": {
+                "N": 3,
+                "type": "Inh"
+            },
+            "HIPP": {
+                "N": 1,
+                "type": "Inh"
+            }
+        },
+        "CA3": {
+            "Pyramidal": {
+                "N": 26,
+                "type": "Exc"
+            },
+            "Basket": {
+                "N": 3,
+                "type": "Inh"
+            },
+            "OLM": {
+                "N": 1,
+                "type": "Inh"
+            }
+        },
+        "CA1": {
+            "Pyramidal": {
+                "N": 100,
+                "type": "Exc"
+            },
+            "Basket": {
+                "N": 9,
+                "type": "Inh"
+            },
+            "OLM": {
+                "N": 3,
+                "type": "Inh"
+            }
+        },
+        "Sub": {
+            "Pyramidal": {
+                "N": 50,
+                "type": "Exc"
+            },
+            "Basket": {
+                "N": 6,
+                "type": "Inh"
+            },
+            "OLM": {
+                "N": 2,
+                "type": "Inh"
+            }
+        }
+    },
+    "inputs": {
+        "CA3 schaffers": {
+            "N_pyr": 50,
+            "N_bc": 3,
+            "interval": 250,
+            "N_spikes": 1000,
+            "t_start": 10,
+            "noise": 0.0,
+            "connectivity": {
+                "Pyramidal": 0.03,
+                "Basket": 0.025
+            }
+        },
+        "EC perforant path": {},
+        "MS": {}
+    },
+    "connectivity": {
+        "intra": {
+            "EC": {},
+            "DG": {},
+            "CA3": {},
+            "CA1": {
+                "distance": {
+                    "Pyramidal": 500,
+                    "Basket": 470,
+                    "OLM": 1057.695
+                },
+                "weight": {
+                    "Pyramidal": {
+                        "Pyramidal": 0.006,
+                        "Basket": 0.005,
+                        "OLM": 0.0015
+                    },
+                    "Basket": {
+                        "Pyramidal": 0.04,
+                        "Basket": 0.002
+                    },
+                    "OLM": {
+                        "Pyramidal": 0.04
+                    }
+                }
+            },
+            "Sub": {}
+        },
+        "inter": {}
+    },
+    "synapses": {
+        "AMPA": {
+            "tau1": 0.5,
+            "tau2": 3,
+            "e": 0
+        },
+        "GABA-A": {
+            "tau1": 1,
+            "tau2": 8,
+            "e": -75
+        }
+    },
+    "stimulation": {
+        "target": "CA1",
+        "coordinates": [
+            -25.2,
+            -8.8,
+            0.0
+        ],
+        "rho": 300,
+        "duration": 1.0,
+        "onset": 100,
+        "I": -0.75
+    },
+    "simulation": {
+        "duration": 635.0,
+        "dt": 0.025,
+        "v_init": -65,
+        "celsius": 35
+    }
+}
