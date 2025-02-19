@@ -6,6 +6,23 @@ __pycache__/
 # C extensions
 *.so
 
+# mods
+*.c
+*.o
+*.dll
+
+# media
+*.png
+*.jpeg
+*.jpg
+
+# repository to ignore
+fi_curves_results/
+param_research/
+results/
+svg_files/
+
+
 # Distribution / packaging
 .Python
 build/
