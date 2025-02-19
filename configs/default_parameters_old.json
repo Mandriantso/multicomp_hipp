@@ -1,5 +1,4 @@
 {
-    "seed_val": 42,
     "areas": {
         "EC": {
             "Pyramidal": {
@@ -101,16 +100,16 @@
                 },
                 "weight": {
                     "Pyramidal": {
-                        "Pyramidal": 0.0,
-                        "Basket": 0.0045,
-                        "OLM": 0.0009
+                        "Pyramidal": 0.006,
+                        "Basket": 0.005,
+                        "OLM": 0.0015
                     },
                     "Basket": {
-                        "Pyramidal": 0.36,
-                        "Basket": 0.0018
+                        "Pyramidal": 0.04,
+                        "Basket": 0.002
                     },
                     "OLM": {
-                        "Pyramidal": 0.0
+                        "Pyramidal": 0.04
                     }
                 }
             },
@@ -119,8 +118,6 @@
         "inter": {}
     },
     "synapses": {
-        "threshold": -20,
-        "delay": 1.0,
         "AMPA": {
             "tau1": 0.5,
             "tau2": 3,
@@ -133,11 +130,10 @@
         }
     },
     "stimulation": {
-        "status": false,
         "target": "CA1",
         "coordinates": [
-            0.6105,
-            0.5,
+            -25.2,
+            -8.8,
             0.0
         ],
         "rho": 300,
@@ -146,32 +142,9 @@
         "I": -0.75
     },
     "simulation": {
-        "duration": 5000.0,
+        "duration": 635.0,
         "dt": 0.025,
         "v_init": -65,
-        "v_noise": {
-            "sigma": 0.01,
-            "mean": 0.0,
-            "tau": 25,
-            "seed": 0
-        },
         "celsius": 35
-    },
-    "analysis": {
-        "firing_rate": {
-            "winsize_fr": 5,
-            "overlap_fr": 0.9
-        },
-        "spectrogram": {
-            "window_size": 1,
-            "window_size_Pxx": 1000,
-            "overlap_Pxx": 0.9,
-            "vmin": 1e-12,
-            "vmax": 1.0
-        }
-    },
-    "git_short_hash": "38329d3",
-    "timestamp": "Wed Feb 19 18:29:58 2025",
-    "git_branch": "main",
-    "git_hash": "38329d3f0a7992781186e62981e3dd2e53b8b540"
+    }
 }
