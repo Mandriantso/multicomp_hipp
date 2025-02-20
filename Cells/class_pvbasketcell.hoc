@@ -14,7 +14,7 @@ strdef myroot
 objref syn, pre_list, templist, rootlist, this
 
 // external variables
-external numCellTypes, cellType
+// external numCellTypes, cellType
 
 // create the sections[segments]
 NumSoma=1
@@ -41,8 +41,8 @@ proc init() {
 	insert_mechs()		// local fcn: insert ion channels and actually set values determined in the mechinit fcn
 	set_chanparams()	// local fcn: after all channels have been inserted, then their other parameters can be set	
 	// synapses
-	pre_list = new List() // define a list for the presynaptic connections
-	define_synapses($3)	// local fcn: define all possible synaptic connections received by this cell
+	// pre_list = new List() // define a list for the presynaptic connections
+	// define_synapses($3)	// local fcn: define all possible synaptic connections received by this cell
 }
 
 proc connect_sections() { local i
@@ -183,11 +183,15 @@ proc append_sections() { local i
 }
 
 
-external lambda_f
+// external lambda_f
+// proc set_nseg() {
+//   	forsec all { nseg = int((L/(0.1*lambda_f(100))+.9)/2)*2 + 1  }
+// }
 proc set_nseg() {
-  	forsec all { nseg = int((L/(0.1*lambda_f(100))+.9)/2)*2 + 1  }
+  forsec all {
+	nseg = 1 + 2*int(L/40)
+  }
 }
-
 
 
 proc mechinit() {
@@ -328,50 +332,50 @@ proc get_root() {local i localobj sref
 	}
 }
 
-strdef myStr
+// strdef myStr
 
-objref newSecRef, syn
-proc define_synapses() {
-	ind = $1
-	i = 0
+// objref newSecRef, syn
+// proc define_synapses() {
+// 	ind = $1
+// 	i = 0
 
-	access soma[0]
-	{distance()}
+// 	access soma[0]
+// 	{distance()}
 
-	for celltype = 0, numCellTypes-1 {
-		templist = new List ()
-		for r=0, cellType[ind].SynList[celltype].count()-1 {
-			execute(cellType[ind].SynList[celltype].object(r).NewSynStr, this) // sets newSecRef
+// 	for celltype = 0, numCellTypes-1 {
+// 		templist = new List ()
+// 		for r=0, cellType[ind].SynList[celltype].count()-1 {
+// 			execute(cellType[ind].SynList[celltype].object(r).NewSynStr, this) // sets newSecRef
 						
-			forsec newSecRef {		
-				for (x,0) {
-					execute(cellType[ind].SynList[celltype].object(r).CondStr, this)
-					 if (y==1) {
-						execute(cellType[ind].SynList[celltype].object(r).SynStr, this)
-						if (cellType[ind].SynList[celltype].object(r).GABAabFlag==0) {
-							syn.tau1 = cellType[ind].SynList[celltype].object(r).tau1
-							syn.tau2 = cellType[ind].SynList[celltype].object(r).tau2
-							syn.e = cellType[ind].SynList[celltype].object(r).efirst
-							if (strcmp(cellType[ind].SynList[celltype].object(r).SynType,"MyExp2Sidnw")==0) {
-								execute(cellType[ind].SynList[celltype].object(r).Scaling, this)
-							}
-						} else {
-							syn.tau1a = cellType[ind].SynList[celltype].object(r).tau1a
-							syn.tau2a = cellType[ind].SynList[celltype].object(r).tau2a
-							syn.ea = cellType[ind].SynList[celltype].object(r).ea
-							syn.tau1b = cellType[ind].SynList[celltype].object(r).tau1b
-							syn.tau2b = cellType[ind].SynList[celltype].object(r).tau2b
-							syn.eb = cellType[ind].SynList[celltype].object(r).eb
-						}
-						syn.sid = i
-						templist.append(syn)
-						i = i + 1
-					}
-				}
-			}
-		}
-		pre_list.append(templist)
-		findme = 1
-	}
-}
+// 			forsec newSecRef {		
+// 				for (x,0) {
+// 					execute(cellType[ind].SynList[celltype].object(r).CondStr, this)
+// 					 if (y==1) {
+// 						execute(cellType[ind].SynList[celltype].object(r).SynStr, this)
+// 						if (cellType[ind].SynList[celltype].object(r).GABAabFlag==0) {
+// 							syn.tau1 = cellType[ind].SynList[celltype].object(r).tau1
+// 							syn.tau2 = cellType[ind].SynList[celltype].object(r).tau2
+// 							syn.e = cellType[ind].SynList[celltype].object(r).efirst
+// 							if (strcmp(cellType[ind].SynList[celltype].object(r).SynType,"MyExp2Sidnw")==0) {
+// 								execute(cellType[ind].SynList[celltype].object(r).Scaling, this)
+// 							}
+// 						} else {
+// 							syn.tau1a = cellType[ind].SynList[celltype].object(r).tau1a
+// 							syn.tau2a = cellType[ind].SynList[celltype].object(r).tau2a
+// 							syn.ea = cellType[ind].SynList[celltype].object(r).ea
+// 							syn.tau1b = cellType[ind].SynList[celltype].object(r).tau1b
+// 							syn.tau2b = cellType[ind].SynList[celltype].object(r).tau2b
+// 							syn.eb = cellType[ind].SynList[celltype].object(r).eb
+// 						}
+// 						syn.sid = i
+// 						templist.append(syn)
+// 						i = i + 1
+// 					}
+// 				}
+// 			}
+// 		}
+// 		pre_list.append(templist)
+// 		findme = 1
+// 	}
+// }
 endtemplate pvbasketcell
