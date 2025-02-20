@@ -15,7 +15,7 @@ mknrndll
 ```
 in terminal after cding to the Mods folder. A nrnmech.dll file will be created. 
 
-### Running
+### Run
 To run the simulation in parallel, run:
 ```
 mpiexec -n N python param_search.py
