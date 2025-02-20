@@ -15,71 +15,146 @@ _data = {
         "EC": {
             "Pyramidal": {
                 "N": 50,
-                "type": "Exc"
+                "type": "Exc",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "Basket": {
                 "N": 6,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "OLM": {
                 "N": 2,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             }
         },
         "DG": {
             "Granule": {
                 "N": 100,
-                "type": "Exc"
+                "type": "Exc",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "Basket": {
                 "N": 3,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "HIPP": {
                 "N": 1,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             }
         },
         "CA3": {
             "Pyramidal": {
                 "N": 26,
-                "type": "Exc"
+                "type": "Exc",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "Basket": {
                 "N": 3,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "OLM": {
                 "N": 1,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             }
         },
         "CA1": {
             "Pyramidal": {
                 "N": 100,
-                "type": "Exc"
+                "type": "Exc",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "Basket": {
                 "N": 9,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "OLM": {
                 "N": 3,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             }
         },
         "Sub": {
             "Pyramidal": {
                 "N": 50,
-                "type": "Exc"
+                "type": "Exc",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "Basket": {
                 "N": 6,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             },
             "OLM": {
                 "N": 2,
-                "type": "Inh"
+                "type": "Inh",
+                "noise": {
+                    "sigma": 1.e-2,
+                    "mean": 0,
+                    "tau": 25
+                }
             }
         }
     },
@@ -118,10 +193,13 @@ _data = {
                     },
                     "Basket": {
                         "Pyramidal": 0.36,
-                        "Basket": 0.0018
+                        "Basket": 0.0018,
+                        "OLM": 0.0
                     },
                     "OLM": {
-                        "Pyramidal": 0.0
+                        "Pyramidal": 0.0,
+                        "Basket": 0.0,
+                        "OLM": 0.0
                     }
                 }
             },
@@ -157,12 +235,7 @@ _data = {
         "duration": 5000.0, # (ms)
         "dt": 0.025, # (ms)
         "v_init": -65, # (mV)
-        "v_noise":{
-            "sigma": 10.e-3, # (mV)
-            "mean": 0.0, # (mV)
-            "tau": 25, # (ms)
-            "seed": 0 
-        },
+        "seed_noise": 0,
         "celsius": 35
     },
     "analysis": {
