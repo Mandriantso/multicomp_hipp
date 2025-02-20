@@ -84,7 +84,7 @@ def compute_FR(spikes: np.ndarray,
             counts.append(spike_cnt)
 
         # return centers, spike counts per window and population firing rate
-        return centers, np.array(counts), np.array(counts)/(window_size*1e-3)/N_cells
+        return centers, np.array(counts), np.array(counts)/(window_size)/N_cells, int(1/win_step)
     
 
 def my_specgram(signal: np.ndarray,
