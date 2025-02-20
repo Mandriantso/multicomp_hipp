@@ -186,12 +186,15 @@ def get_flattened_coordinates(x, y, x_total, y_total):
     return x_flat, y_flat
 
 
-def pyr_placement(n_pyrs, region_min, region_max, thickness, original_curve, paced_curve, idx, control_points):
+def pyr_placement(n_pyrs, region_min, region_max, thickness, original_curve, paced_curve, idx, control_points, constrain_y=False):
     x_pyrs = np.random.uniform(region_min*0.01, region_max*0.01, size=(n_pyrs,1))
     # sort ascending x 
     x_pyrs = np.sort(x_pyrs, axis=0)
     
-    y_pyrs = np.random.uniform(0, 1, size=(n_pyrs, 1))
+    if constrain_y:
+        y_pyrs = np.random.uniform(0.25, 0.6, size=(n_pyrs, 1))
+    else:
+        y_pyrs = np.random.uniform(0, 1, size=(n_pyrs, 1))
     # translate to cartesian coordinates
     pyr_coords = []
     for i in range(n_pyrs):
