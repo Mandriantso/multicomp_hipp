@@ -20,7 +20,7 @@ def compute_FR(spikes: np.ndarray,
                duration: int,
                window_size: float,
                overlap: float,
-               gaussian: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+               gaussian: bool = False) -> tuple[np.ndarray, np.ndarray, np.ndarray, int]:
     """
     Compute the firing rate using a windowed moving average.
 
@@ -129,3 +129,49 @@ def my_specgram(signal: np.ndarray,
 
     return f, t, (1.0 / window_width) * (Sxx ** 2)
 
+def my_specgram2(signal: np.ndarray,
+                   fs: int,
+                   window_width: int,
+                   window_overlap: int,
+                   k: int = 1,
+                   **kwargs: dict) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Computes the power spectrum of the specified signal.
+
+    A periodic Hann window with the specified width and overlap is used.
+
+    Parameters
+    ----------
+    signal: numpy.ndarray
+        The input signal
+    fs: int
+        Sampling frequency of the input signal
+    window_width: int
+        Width of the Hann windows in samples
+    window_overlap: int
+        Overlap between Hann windows in samples
+    k: int
+        Used in the nfft calculation; round to (nearest power of 2)+k
+    kwargs: dict
+        Extra arguments to pass to signal.spectrogram(); for more info, refer to the scipy documentation.
+
+    Returns
+    -------
+    f: numpy.ndarray
+        Array of frequency values for the first axis of the returned spectrogram
+    t: numpy.ndarray
+        Array of time values for the second axis of the returned spectrogram
+    Sxx: numpy.ndarray
+        Power spectrogram of the input signal with axes [frequency, time]
+    """
+    nfft = 2**((window_width-1).bit_length()+k) # np.ceil(np.log2(window_width))
+    f, t, Sxx = sig.spectrogram(x=signal,
+                                fs=fs,
+                                nfft=nfft,
+                                detrend='constant',
+                                window=sig.windows.hann(M=window_width, sym=False),
+                                # nperseg=window_width,
+                                noverlap=window_overlap,
+                                **kwargs)
+
+    return f, t, Sxx
