@@ -11,7 +11,7 @@ def add_sizebar(ax, xlocs, ylocs, bcolor, text):
 
 def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
                  colors: list, cell_types: list[str], x_lim: list[float] = None, y_lim: list[float] = None,
-                 stim_loc: float = None, stim_time: float = None, stim_dur: float = None):
+                 stim_loc: float = None, stim_time: float = None, stim_dur: float = None, size_raster : float = 0.5):
     
     # create figure
     fig, ax = plt.subplots(1, 1, figsize=(6,9))
@@ -19,7 +19,7 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
     # make raster plot
     # check if several spike_monitors or just one
     for i in range(len(t_spike_monitors)):
-        ax.scatter(t_spike_monitors[i], id_spike_monitors[i], marker='o', color=colors[i])
+        ax.scatter(t_spike_monitors[i], id_spike_monitors[i], s=size_raster, marker='o', color=colors[i])
 
     # plot span for stimulation if stimulation
     if stim_loc:
@@ -47,14 +47,14 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
 
     handles, labels = ax.get_legend_handles_labels()
     handles.extend(custom_lines)
-    ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
+    ax.legend(handles=handles, ncol=3, loc='lower center', bbox_to_anchor=(0, 1.02, 1, 0.2), prop={'size':9})
 
     plt.show()
 
 
 def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
                  colors: list, cell_types: list[str], x_lim: list[float] = None, y_lim: list[float] = None,
-                 stim_loc: float = None, stim_time: float = None, stim_dur: float = None):
+                 stim_loc: float = None, stim_time: float = None, stim_dur: float = None, size_raster: float = 0.5):
 
     # create figure
     fig, ax = plt.subplots(1, 1, figsize=(6,9))
@@ -62,7 +62,7 @@ def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
     # make raster plot
     # check if several spike_monitors or just one
     for i in range(len(t_spike_monitors)):
-        ax.scatter(t_spike_monitors[i], id_spike_monitors[i], marker='o', color=colors[i])
+        ax.scatter(t_spike_monitors[i], id_spike_monitors[i], s=size_raster, marker='o', color=colors[i])
 
     # plot span for stimulation if stimulation
     if stim_loc:
@@ -90,9 +90,10 @@ def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
 
     handles, labels = ax.get_legend_handles_labels()
     handles.extend(custom_lines)
-    ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
+    # ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
+    ax.legend(handles=handles, ncol=3, loc='lower center', bbox_to_anchor=(0, 1.02, 1, 0.2), prop={'size':9})
 
-    plt.savefig(name_fig)
+    plt.savefig(name_fig, bbox_inches="tight")
     plt.close()
 
 
@@ -148,14 +149,14 @@ def save_FR(name_fig: str, t: list, rates: list, colors: list, cell_types: list[
     handles.extend(custom_lines)
     ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
 
-    plt.savefig(name_fig)
+    plt.savefig(name_fig, bbox_inches="tight")
     plt.close()
 
 
-def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str]): # TODO: add colorbar
+def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], ylim: list=None): 
 
-    fig, ax1, ax2, ax3 = plt.subplots(3, 1, figsize=(6, 9), sharex=True, sharey=True)
-    vmax = max(max(sxx[0].max(), sxx[1].max), sxx[2].max())
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 9), sharex=True, sharey=True)
+    vmax = max(max(sxx[0].max(), sxx[1].max()), sxx[2].max())
     im_pyr = ax1.pcolormesh(t[0], f[0], sxx[0]/vmax, shading='auto', cmap='inferno')
     im_bc = ax2.pcolormesh(t[1], f[1], sxx[1]/vmax, shading='auto', cmap='inferno')
     im_olm = ax3.pcolormesh(t[2], f[2], sxx[2]/vmax, shading='auto', cmap='inferno')
@@ -165,14 +166,21 @@ def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str]): # TODO: a
     ax3.text(0.02, 0.9, cell_types[2], transform=ax3.transAxes, color='white', verticalalignment='top')
 
     ax3.set_xlabel('Time [s]')
+    if ylim:
+        ax3.set_ylim(ylim)
+    else:
+        ax3.set_ylim([0,200])
+    cbar1 = fig.colorbar(im_pyr, ax=ax1)
+    cbar2 = fig.colorbar(im_bc, ax=ax2)
+    cbar3 = fig.colorbar(im_olm, ax=ax3)
 
     plt.show()
 
 
-def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[str]): # TODO: add colorbar
+def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[str], ylim: list=None): 
 
-    fig, ax1, ax2, ax3 = plt.subplots(3, 1, figsize=(6, 9), sharex=True, sharey=True)
-    vmax = max(max(sxx[0].max(), sxx[1].max), sxx[2].max())
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 9), sharex=True, sharey=True)
+    vmax = max(max(sxx[0].max(), sxx[1].max()), sxx[2].max())
     im_pyr = ax1.pcolormesh(t[0], f[0], sxx[0]/vmax, shading='auto', cmap='inferno')
     im_bc = ax2.pcolormesh(t[1], f[1], sxx[1]/vmax, shading='auto', cmap='inferno')
     im_olm = ax3.pcolormesh(t[2], f[2], sxx[2]/vmax, shading='auto', cmap='inferno')
@@ -182,8 +190,16 @@ def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[s
     ax3.text(0.02, 0.9, cell_types[2], transform=ax3.transAxes, color='white', verticalalignment='top')
 
     ax3.set_xlabel('Time [s]')
+    if ylim:
+        ax3.set_ylim(ylim)
+    else:
+        ax3.set_ylim([0,200])
 
-    plt.savefig(name_fig)
+    cbar1 = fig.colorbar(im_pyr, ax=ax1)
+    cbar2 = fig.colorbar(im_bc, ax=ax2)
+    cbar3 = fig.colorbar(im_olm, ax=ax3)
+
+    plt.savefig(name_fig, bbox_inches="tight")
     plt.close()
 
 
