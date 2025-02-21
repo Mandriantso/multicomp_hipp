@@ -165,7 +165,10 @@ def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], ylim: list
     ax2.text(0.02, 0.9, cell_types[1], transform=ax2.transAxes, color='white', verticalalignment='top')
     ax3.text(0.02, 0.9, cell_types[2], transform=ax3.transAxes, color='white', verticalalignment='top')
 
-    ax3.set_xlabel('Time [s]')
+    ax3.set_xlabel('Time (s)')
+    ax1.set_ylabel('Frequency (Hz)')
+    ax2.set_ylabel('Frequency (Hz)')
+    ax3.set_ylabel('Frequency (Hz)')
     if ylim:
         ax3.set_ylim(ylim)
     else:
@@ -189,7 +192,10 @@ def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[s
     ax2.text(0.02, 0.9, cell_types[1], transform=ax2.transAxes, color='white', verticalalignment='top')
     ax3.text(0.02, 0.9, cell_types[2], transform=ax3.transAxes, color='white', verticalalignment='top')
 
-    ax3.set_xlabel('Time [s]')
+    ax3.set_xlabel('Time (s)')
+    ax1.set_ylabel('Frequency (Hz)')
+    ax2.set_ylabel('Frequency (Hz)')
+    ax3.set_ylabel('Frequency (Hz)')
     if ylim:
         ax3.set_ylim(ylim)
     else:
