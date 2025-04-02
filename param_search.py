@@ -11,6 +11,7 @@ from Scripts.Network import *
 from Scripts.myplot import save_raster, save_FR, save_specgram
 from Scripts.utilities import *
 from Scripts.anatomy import *
+from Scripts.input import *
 from Model import settings
 import parameters
 
@@ -56,7 +57,7 @@ parser.add_argument('-sd', '--save_dir',
                     nargs='?',
                     metavar='-sd',
                     type=str,
-                    default='results_param_search',
+                    default='new_param_search',
                     help='Destination directory to save the results')
 
 args = parser.parse_args()
@@ -84,7 +85,10 @@ pc = h.ParallelContext()
 rank = pc.id()
 
 # factor by which to multiply E -> I and I -> E weights
-K_factors = [0.1, 0.25, 0.33, 0.5, 0.6, 0.75] 
+# K_factors = [0.1, 0.25, 0.33, 0.5, 0.6, 0.75] 
+# K_factors = [2.25, 2.33, 2.5, 2.6, 2.75, 3.] 
+K_factors = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.] 
+k_x = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.]
 
 if rank == 0:
     # Create directories
@@ -310,19 +314,21 @@ if rank == 0:
     print('-'*32)
     sys.stdout.flush()
 
-for k_e in K_factors: # for Pyr -> BC weights
+amp = 3.0
+
+for k_e in [2.0]: # for Pyr -> BC weights
     if rank == 0:
         print(f'\n[+]    k_e = {k_e}')
         print('-'*32)
         sys.stdout.flush()
 
-    dirs['dir_E'] = os.path.join(dirs['results'], "w_E_{}".format(k_e))
+    dirs['dir_E'] = os.path.join(dirs['results'], "test opti oscillatory w_E_{}".format(k_e))
     if not os.path.isdir(dirs['dir_E']) and rank == 0:
         print('[+] Creating directory', dirs['dir_E'])
         sys.stdout.flush()
         os.makedirs(dirs['dir_E'])
 
-    for k_i in K_factors: # for BC -> Pyr weights
+    for k_i in [0.15]: # for BC -> Pyr weights
         if rank == 0:
             print(f'\n[+]    k_i = {k_i}')
             print('-'*32)
@@ -334,8 +340,14 @@ for k_e in K_factors: # for Pyr -> BC weights
             sys.stdout.flush()
             os.makedirs(dirs['save_dir'])
 
+        dirs['amp_dir'] = os.path.join(dirs['save_dir'], "{}nA".format(amp))
+        if not os.path.isdir(dirs['amp_dir']) and rank == 0:
+            print('[+] Creating directory', dirs['amp_dir'])
+            sys.stdout.flush()
+            os.makedirs(dirs['amp_dir'])
 
-        dirs['data'] = os.path.join(dirs['save_dir'], 'data')
+
+        dirs['data'] = os.path.join(dirs['amp_dir'], 'data')
         if not os.path.isdir(dirs['data']) and rank == 0:
             print('[+] Creating directory', dirs['data'])
             sys.stdout.flush()
@@ -347,7 +359,7 @@ for k_e in K_factors: # for Pyr -> BC weights
             sys.stdout.flush()
             os.makedirs(dirs['coords'])
 
-        dirs['figures'] = os.path.join(dirs['save_dir'], 'figures')
+        dirs['figures'] = os.path.join(dirs['amp_dir'], 'figures')
         if not os.path.isdir(dirs['figures']) and rank == 0:
             print('[+] Creating directory', dirs['figures'])
             sys.stdout.flush()
@@ -395,7 +407,7 @@ for k_e in K_factors: # for Pyr -> BC weights
                     mt_.select("Exp2Syn")
                     pp = mt_.pp_begin(sec=target_sec)
                     nc_ = pc.gid_connect(pregid, pp)
-                    nc_.weight[0] = settings.w_CA1[2][0]
+                    nc_.weight[0] = settings.w_CA1[2][0] # try with same as BC
                     nc_.threshold = settings.syn_threshold
                     nc_.delay = settings.syn_delay
                     cell_._ncs.append(nc_)
@@ -436,7 +448,7 @@ for k_e in K_factors: # for Pyr -> BC weights
                     mt_.select("Exp2Syn")
                     pp = mt_.pp_begin(sec=target_sec)
                     nc_ = pc.gid_connect(pregid, pp)
-                    nc_.weight[0] = settings.w_CA1[0][2]
+                    nc_.weight[0] = settings.w_CA1[0][2] # try with same as BC
                     nc_.threshold = settings.syn_threshold
                     nc_.delay = settings.syn_delay
                     cell_._ncs.append(nc_)
@@ -448,21 +460,77 @@ for k_e in K_factors: # for Pyr -> BC weights
             print('\n[20] Setting the inputs...')
             sys.stdout.flush()
 
+        osc_amp = h.Vector()
+        # setting oscillatory input current
+        for cell_ in ca1_pyr_cells:
+            target_secs = list(cell_.lm_list)
+            target_sec = random.choice(target_secs)
+            input_ = oscInput(cell_, target_sec(0.5), 350, settings.duration - 350, 6, amp)
+        osc_amp.record(input_._ref_i)
+
         # setting current vectors
-        VecT = h.Vector([0, settings.duration])
-        VecStim = h.Vector([0., 1.])
-        stim_amp = h.Vector()
+        # VecT = h.Vector([0, settings.duration])
+        # VecStim = h.Vector([0., 1.])
+        # stim_amp = h.Vector()
 
-        for cell_ in ca1_cells:
-            if 'PyramidalCell' in str(cell_):
-                stim_ = h.IClamp(cell_.soma(0.5))
-                stim_.delay = 0
-                stim_.dur = 1e9
+        # for cell_ in ca1_cells:
+        #     if 'PyramidalCell' in str(cell_):
+        #         stim_ = h.IClamp(cell_.soma(0.5))
+        #         stim_.delay = 0
+        #         stim_.dur = 1e9
 
-                VecStim.play(stim_._ref_amp, VecT, 1)
-                cell_._inputs_list.append(stim_)
+        #         VecStim.play(stim_._ref_amp, VecT, 1)
+        #         cell_._inputs_list.append(stim_)
 
-                stim_amp.record(stim_._ref_i) # last stim_
+        #         stim_amp.record(stim_._ref_i) # last stim_
+
+        # TODO : retrieve from parameters file
+        # create inputs from CA3 Schaffer collaterals
+        # set netstim params
+        # ENUM = 50 # number of cells to simulate
+
+        # ISI = 125    # interspike interval
+        # NUM = 1000   # max number of spikes
+        # DELSTART = 10    # delay until first spike
+        # NOISE = 0.0  # noise for variaty in spiking
+
+
+        # TSTOP = DELSTART + 2.5*125
+
+        # create netstims
+        # ca3_schaffers = [h.NetStim() for _ in range(ENUM)]
+
+        # all_random_streams = []
+
+        # set netstim parameters
+        # for i, ns in enumerate(ca3_schaffers):
+        #     ns.interval = ISI
+        #     ns.number = NUM
+        #     ns.start = DELSTART + random.randint(0, 80)
+        #     ns.noise = NOISE
+        #     # specify the (i, 0, 0)th random stream
+        #     ns.noiseFromRandom123(i, 0, 0)
+
+        # print('\n[21] Connecting inputs...')
+        # print('-'*32)
+
+        # # get inputs
+        # id_pyr_inputs = get_inputs(50, ca3_schaffers, ca1_pyr_cells)
+        # id_bc_inputs = get_inputs(3, ca3_schaffers, ca1_bc_cells)
+
+        # External inputs
+        # CA3 Schaffer collaterals
+        # for cell in ca1_pyr_cells:
+        #     for input_cell in cell._inputs_list:
+        #         target_secs = list(cell.rad_list)
+        #         target_sec = random.choice(target_secs)
+        #         connect_inputs(input_cell, cell, cell.radTmed, 0.03, 1)
+
+        # for cell in ca1_bc_cells:
+        #     for input_cell in cell.inputs_list:
+        #         target_secs = list(cell.sr_med)
+        #         target_sec = random.choice(target_secs)
+        #         connect_inputs(input_cell, cell, target_sec, 0.025, 1)
 
         if rank == 0:
             print('[+] Inputs done')
@@ -622,7 +690,7 @@ for k_e in K_factors: # for Pyr -> BC weights
             t_FR_bc, count_bc, FR_bc, _ = compute_FR(np.array(t_spikes_bc)*1e-3, n_bc_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
             t_FR_olm, count_olm, FR_olm, _ = compute_FR(np.array(t_spikes_olm)*1e-3, n_olm_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
 
-            with open(os.path.join(dirs["save_dir"], "logs.txt"), "w") as f:
+            with open(os.path.join(dirs["amp_dir"], "output.txt"), "w") as f:
                 f.write("Simulation parameters\n")
                 f.write("-------------------------\n")
                 f.write("remark :\n")
@@ -640,6 +708,7 @@ for k_e in K_factors: # for Pyr -> BC weights
                 f.write("Pyr firing rate : {} Hz\n".format(np.mean(FR_pyr)))
                 f.write("BC firing rate : {} Hz\n".format(np.mean(FR_bc)))
                 f.write("OLM firing rate : {} Hz\n\n".format(np.mean(FR_olm)))
+
                 f.write("Mean firing rate over last 1s\n")
                 f.write("Pyr firing rate : {} Hz\n".format(np.mean(FR_pyr[-200:])))
                 f.write("BC firing rate : {} Hz\n".format(np.mean(FR_bc[-200:])))
@@ -678,16 +747,23 @@ for k_e in K_factors: # for Pyr -> BC weights
                         ['skyblue', 'lightpink', 'darkorange'], ['pyramidal cells', 'basket cells', 'olm cells'],
                         x_lim=[0, settings.duration])
         
-            save_raster(os.path.join(dirs['figures'], 'raster_plot_4750_5000.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
+            save_raster(os.path.join(dirs['figures'], 'raster_plot_4000_5000.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
                         [id_spikes_pyr, id_spikes_bc, id_spikes_olm], 
                         ['skyblue', 'lightpink', 'darkorange'], ['pyramidal cells', 'basket cells', 'olm cells'],
                         x_lim=[settings.duration - 1e3, settings.duration], size_raster=1.) # last second
 
-            np.savez(os.path.join(dirs['data'], 'ramping_current.npz'), t=np.array(t_vec), amplitude=np.array(stim_amp))
+            # np.savez(os.path.join(dirs['data'], 'ramping_current.npz'), t=np.array(t_vec), amplitude=np.array(stim_amp))
+            np.savez(os.path.join(dirs['data'], 'ramping_current.npz'), t=np.array(t_vec), amplitude=np.array(osc_amp))
             np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
 
+            # fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
+            # ax2.plot(np.array(t_vec), np.array(stim_amp), color='red')
+            # ax2.set_xlabel("Time (ms)")
+            # ax2.set_ylabel("nA")
+            # plt.savefig(os.path.join(dirs['figures'], 'ramping_current.png'), bbox_inches="tight")
+
             fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
-            ax2.plot(np.array(t_vec), np.array(stim_amp), color='red')
+            ax2.plot(np.array(t_vec), np.array(osc_amp), color='red')
             ax2.set_xlabel("Time (ms)")
             ax2.set_ylabel("nA")
             plt.savefig(os.path.join(dirs['figures'], 'ramping_current.png'), bbox_inches="tight")
@@ -707,7 +783,8 @@ for k_e in K_factors: # for Pyr -> BC weights
 
         # format vectors
         t_vec.resize(0)
-        stim_amp.resize(0)
+        # stim_amp.resize(0)
+        osc_amp.resize(0)
         i_noise.resize(0)
 
         for cell_ in ca1_cells:
