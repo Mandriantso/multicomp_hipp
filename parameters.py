@@ -188,11 +188,11 @@ _data = {
                 "weight": { # µS
                     "Pyramidal": { # from -> to
                         "Pyramidal": 0.0,
-                        "Basket": 0.0045,
+                        "Basket": 0.009, # after grid search
                         "OLM": 0.0009
                     },
                     "Basket": {
-                        "Pyramidal": 0.36,
+                        "Pyramidal": 0.054, # after grid search
                         "Basket": 0.0018,
                         "OLM": 0.0
                     },
@@ -336,7 +336,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='default_parameters',
+                        default='default_parameters_2',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
