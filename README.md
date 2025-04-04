@@ -23,6 +23,10 @@ Parameters files are stored in configs folder.
 
 - **default_parameters_2_stim.json** is the file used with updated connection weights for Pyramidal and Basket cells, adding extracellular stimulation
 
+### Simulation files
+- **run_simulation.py** main code to run a single simulation
+- **param_search.py** code for grid search on connection weights
+
 ### Run
 To run the simulation in parallel, run:
 ```
