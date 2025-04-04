@@ -214,8 +214,8 @@
         "status": true,
         "target": "CA1",
         "coordinates": [
-            0.6105,
-            0.5,
+            13980.0,
+            750.0,
             0.0
         ],
         "rho": 300,

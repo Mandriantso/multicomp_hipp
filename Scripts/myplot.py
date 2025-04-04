@@ -3,10 +3,10 @@ from matplotlib.lines import Line2D
 import numpy as np
 
 
-def add_sizebar(ax, xlocs, ylocs, bcolor, text):
+def add_sizebar(ax, xlocs, ylocs, bcolor, text): # TODO:  add vertical and horizontal orientation
     """ Add a sizebar to the provided axis """
     ax.plot(xlocs, ylocs, ls='-', c=bcolor, linewidth=1., rasterized=True, clip_on=False)
-    ax.text(x=xlocs[0]+10, y=ylocs[0], s=text, va='center', ha='left', clip_on=False)
+    ax.text(x=xlocs[0]+10, y=ylocs[0]-2, s=text, va='center', ha='left', clip_on=False)
 
 
 def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
@@ -22,22 +22,27 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
         ax.scatter(t_spike_monitors[i], id_spike_monitors[i], s=size_raster, marker='o', color=colors[i])
 
     # plot span for stimulation if stimulation
-    if stim_loc:
+    if stim_time and stim_dur:
         ax.axvline(x=stim_time, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         ax.axvline(x=stim_time + stim_dur, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         ax.axvspan(stim_time, stim_time + stim_dur, alpha=.5, color=list(plt.cm.tab20c(19)[:3]), zorder=0)
-        ax.axhline(y=stim_loc, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
-
+        if stim_loc:
+            ax.axhline(y=stim_loc, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         trans = ax.get_xaxis_transform() # x in data untis, y in axes fraction
         ax.annotate('Stimulation', xy=(stim_time+stim_dur/2, 1.01 ), xycoords=trans, ha='center', color=list(plt.cm.tab20c(16)[:3]))
-
+        
     # set axes
     if x_lim:
         ax.set_xlim(x_lim[0], x_lim[1])
     if y_lim:
         ax.set_ylim(y_lim[0], y_lim[1])
-    ax.set_xlabel('Time (ms)')
-    ax.set_ylabel('Cell n°')
+    ax.spines['left'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.axes.get_yaxis().set_visible(False)
+    ax.axes.get_xaxis().set_visible(False)
+    add_sizebar(ax, [5000-250, 5000], [-1, -1], 'black', '250 ms')
 
     # set legend
     custom_lines = []
@@ -65,12 +70,12 @@ def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
         ax.scatter(t_spike_monitors[i], id_spike_monitors[i], s=size_raster, marker='o', color=colors[i])
 
     # plot span for stimulation if stimulation
-    if stim_loc:
+    if stim_time and stim_dur:
         ax.axvline(x=stim_time, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         ax.axvline(x=stim_time + stim_dur, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         ax.axvspan(stim_time, stim_time + stim_dur, alpha=.5, color=list(plt.cm.tab20c(19)[:3]), zorder=0)
-        ax.axhline(y=stim_loc, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
-
+        if stim_loc:
+            ax.axhline(y=stim_loc, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         trans = ax.get_xaxis_transform() # x in data untis, y in axes fraction
         ax.annotate('Stimulation', xy=(stim_time+stim_dur/2, 1.01 ), xycoords=trans, ha='center', color=list(plt.cm.tab20c(16)[:3]))
 
@@ -79,8 +84,14 @@ def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
         ax.set_xlim(x_lim[0], x_lim[1])
     if y_lim:
         ax.set_ylim(y_lim[0], y_lim[1])
-    ax.set_xlabel('Time (ms)')
-    ax.set_ylabel('Cell n°')
+    # ax.set_xlabel('Time (ms)')
+    ax.spines['left'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.axes.get_yaxis().set_visible(False)
+    ax.axes.get_xaxis().set_visible(False)
+    add_sizebar(ax, [5000-250, 5000], [-1, -1], 'black', '250 ms')
 
     # set legend
     custom_lines = []
@@ -153,7 +164,7 @@ def save_FR(name_fig: str, t: list, rates: list, colors: list, cell_types: list[
     plt.close()
 
 
-def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], ylim: list=None): 
+def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], xlim: list=None, ylim: list=None): 
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 9), sharex=True, sharey=True)
     vmax = max(max(sxx[0].max(), sxx[1].max()), sxx[2].max())
@@ -169,6 +180,8 @@ def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], ylim: list
     ax1.set_ylabel('Frequency (Hz)')
     ax2.set_ylabel('Frequency (Hz)')
     ax3.set_ylabel('Frequency (Hz)')
+    if xlim:
+        ax3.set_xlim(xlim)
     if ylim:
         ax3.set_ylim(ylim)
     else:
@@ -176,6 +189,9 @@ def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], ylim: list
     cbar1 = fig.colorbar(im_pyr, ax=ax1)
     cbar2 = fig.colorbar(im_bc, ax=ax2)
     cbar3 = fig.colorbar(im_olm, ax=ax3)
+    cbar1.set_label("Power (arbitrary unit)")
+    cbar2.set_label("Power (arbitrary unit)")
+    cbar3.set_label("Power (arbitrary unit)")
 
     plt.show()
 
@@ -204,6 +220,9 @@ def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[s
     cbar1 = fig.colorbar(im_pyr, ax=ax1)
     cbar2 = fig.colorbar(im_bc, ax=ax2)
     cbar3 = fig.colorbar(im_olm, ax=ax3)
+    cbar1.set_label("Power (arbitrary unit)")
+    cbar2.set_label("Power (arbitrary unit)")
+    cbar3.set_label("Power (arbitrary unit)")
 
     plt.savefig(name_fig, bbox_inches="tight")
     plt.close()

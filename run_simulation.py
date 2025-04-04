@@ -146,7 +146,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no_input"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -682,7 +682,7 @@ if rank == 0:
     print('[+] Oscillatory input')
     sys.stdout.flush()
 
-amp = 0 #6.0
+amp = 6.0
 osc_amp = h.Vector()
 # setting oscillatory input current
 for cell_ in ca1_pyr_cells:
@@ -726,7 +726,7 @@ if rank == 0:
 stim_amp = h.Vector()
 stim_time = h.Vector()
 
-stim_amp, stim_time = stim_waveform(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp*2)
+stim_amp, stim_time = stim_waveform(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp)
 
 # Set extracellular stimulation
 # set xtra mechanism in all cells
@@ -949,12 +949,14 @@ if rank == 0:
     save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm], 
                     ['skyblue', 'lightpink', 'darkorange'], ['pyramidal cells', 'basket cells', 'olm cells'],
-                    x_lim=[0, settings.duration])
+                    x_lim=[0, settings.duration],
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=settings.stim_pos[0])
     
     save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
                 [id_spikes_pyr, id_spikes_bc, id_spikes_olm], 
                 ['skyblue', 'lightpink', 'darkorange'], ['pyramidal cells', 'basket cells', 'olm cells'],
-                x_lim=[settings.duration - 1e3, settings.duration], size_raster=1.) # last second
+                x_lim=[settings.duration - 1e3, settings.duration], size_raster=1., 
+                stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=settings.stim_pos[0]) # last second
 
     np.savez(os.path.join(dirs['data'], 'theta_input.npz'), t=np.array(t_vec), amplitude=np.array(osc_amp))
     np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
