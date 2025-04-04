@@ -35,7 +35,7 @@ _data = {
                 "N": 2,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 1.e-2,
+                    "sigma": 2.5e-3,
                     "mean": 0,
                     "tau": 25
                 }
@@ -64,7 +64,7 @@ _data = {
                 "N": 1,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 1.e-2,
+                    "sigma": 2.5e-3,
                     "mean": 0,
                     "tau": 25
                 }
@@ -93,7 +93,7 @@ _data = {
                 "N": 1,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 1.e-2,
+                    "sigma": 2.5e-3,
                     "mean": 0,
                     "tau": 25
                 }
@@ -122,7 +122,7 @@ _data = {
                 "N": 3,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 1.e-2,
+                    "sigma": 2.5e-3,
                     "mean": 0,
                     "tau": 25
                 }
@@ -151,7 +151,7 @@ _data = {
                 "N": 2,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 1.e-2,
+                    "sigma": 2.5e-3,
                     "mean": 0,
                     "tau": 25
                 }
@@ -222,14 +222,14 @@ _data = {
         }
     },
     "stimulation": {
-        "status": False,    # False -> no stimulation; True -> stimulation is on
+        "status": True,    # False -> no stimulation; True -> stimulation is on
         "target": "CA1",
         "coordinates": (0.6105, 0.500, 0.0),  # point electrode coordinates using intrinsic coordinates system (x,y,z) (µm) 
                                                 # to be transformed either to flattened coordinates or to cartesian coordinates 
         "rho": 300, # medium resistivity (ohm cm)
-        "duration": 1.0, # (ms)
-        "onset": 100, # (ms)
-        "I": -0.75 # (mA) stimulation amplitude
+        "duration": 10.0, # (ms)
+        "onset": 4200, # (ms)
+        "I": -6.5 # (mA) stimulation amplitude
     },
     "simulation": {
         "duration": 5000.0, # (ms)
@@ -336,7 +336,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='default_parameters_2',
+                        default='default_parameters_2_stim',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
