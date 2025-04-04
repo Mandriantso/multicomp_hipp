@@ -19,7 +19,8 @@ __pycache__/
 # repository to ignore
 fi_curves_results/
 param_research/
-results*/
+*results*/
+Positions/
 svg_files/
 Mods/
 new_param_search/

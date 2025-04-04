@@ -15,6 +15,14 @@ mknrndll
 ```
 in terminal after cding to the Mods folder. A nrnmech.dll file will be created. 
 
+### Parameters files
+Parameters files are stored in configs folder.
+- **default_parameters_1.json** is the file used for connection weights optimization. The connection parameters were set from Nikos' model, adapted to my network size, and increased until we were able to see enough activity in all populations
+
+- **default_parameters_2.json** is the file used with updated connection weights for Pyramidal and Basket cells
+
+- **default_parameters_2_stim.json** is the file used with updated connection weights for Pyramidal and Basket cells, adding extracellular stimulation
+
 ### Run
 To run the simulation in parallel, run:
 ```

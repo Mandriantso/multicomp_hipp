@@ -24,7 +24,7 @@
                 "N": 2,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 0.01,
+                    "sigma": 0.0025,
                     "mean": 0,
                     "tau": 25
                 }
@@ -53,7 +53,7 @@
                 "N": 1,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 0.01,
+                    "sigma": 0.0025,
                     "mean": 0,
                     "tau": 25
                 }
@@ -82,7 +82,7 @@
                 "N": 1,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 0.01,
+                    "sigma": 0.0025,
                     "mean": 0,
                     "tau": 25
                 }
@@ -111,7 +111,7 @@
                 "N": 3,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 0.01,
+                    "sigma": 0.0025,
                     "mean": 0,
                     "tau": 25
                 }
@@ -140,7 +140,7 @@
                 "N": 2,
                 "type": "Inh",
                 "noise": {
-                    "sigma": 0.01,
+                    "sigma": 0.0025,
                     "mean": 0,
                     "tau": 25
                 }
@@ -219,9 +219,9 @@
             0.0
         ],
         "rho": 300,
-        "duration": 1.0,
-        "onset": 100,
-        "I": -0.75
+        "duration": 10.0,
+        "onset": 4200,
+        "I": -6.5
     },
     "simulation": {
         "duration": 5000.0,
@@ -243,8 +243,8 @@
             "vmax": 1.0
         }
     },
-    "git_short_hash": "3b9b5be",
-    "timestamp": "Wed Apr  2 16:01:39 2025",
+    "git_short_hash": "5f118dc",
+    "timestamp": "Wed Apr  2 17:32:36 2025",
     "git_branch": "main",
-    "git_hash": "3b9b5be4165bbe1282046730672b85b8b701cff4"
+    "git_hash": "5f118dc1f8ec13717278ab4223825a2bd4955b3e"
 }
