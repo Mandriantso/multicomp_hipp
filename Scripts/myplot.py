@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import numpy as np
+import time
 
 
 def add_sizebar(ax, xlocs, ylocs, bcolor, text): # TODO:  add vertical and horizontal orientation
@@ -9,9 +10,19 @@ def add_sizebar(ax, xlocs, ylocs, bcolor, text): # TODO:  add vertical and horiz
     ax.text(x=xlocs[0]+10, y=ylocs[0]-2, s=text, va='center', ha='left', clip_on=False)
 
 
+def plot_watermark(fig, **git_kwargs):
+    """ Add simulation infomation on the figure """
+
+    plt.text(.995, .99, '{0}\n {1} ({2}, {3})\n using "{4}"'.format(
+        git_kwargs['timestamp'], git_kwargs['script_name'], git_kwargs['branch'], git_kwargs['short_hash'], git_kwargs['config_file']),
+             transform=fig.transFigure, ha="right", va="top", clip_on=False,
+             color = "black", family="Roboto Mono", weight="400", size="xx-small")
+    
+
 def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
                  colors: list, cell_types: list[str], x_lim: list[float] = None, y_lim: list[float] = None,
-                 stim_loc: float = None, stim_time: float = None, stim_dur: float = None, size_raster : float = 0.5):
+                 stim_loc: list = None, stim_time: float = None, stim_dur: float = None, size_raster : float = 0.5,
+                 **git_kwargs):
     
     # create figure
     fig, ax = plt.subplots(1, 1, figsize=(6,9))
@@ -27,7 +38,8 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
         ax.axvline(x=stim_time + stim_dur, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         ax.axvspan(stim_time, stim_time + stim_dur, alpha=.5, color=list(plt.cm.tab20c(19)[:3]), zorder=0)
         if stim_loc:
-            ax.axhline(y=stim_loc, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
+            for i in range(len(stim_loc)):
+                ax.axhline(y=stim_loc[i], color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         trans = ax.get_xaxis_transform() # x in data untis, y in axes fraction
         ax.annotate('Stimulation', xy=(stim_time+stim_dur/2, 1.01 ), xycoords=trans, ha='center', color=list(plt.cm.tab20c(16)[:3]))
         
@@ -53,13 +65,14 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
     handles, labels = ax.get_legend_handles_labels()
     handles.extend(custom_lines)
     ax.legend(handles=handles, ncol=3, loc='lower center', bbox_to_anchor=(0, 1.02, 1, 0.2), prop={'size':9})
-
+    plot_watermark(fig, git_kwargs)
     plt.show()
 
 
 def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
                  colors: list, cell_types: list[str], x_lim: list[float] = None, y_lim: list[float] = None,
-                 stim_loc: float = None, stim_time: float = None, stim_dur: float = None, size_raster: float = 0.5):
+                 stim_loc: list = None, stim_time: float = None, stim_dur: float = None, size_raster: float = 0.5,
+                 **git_kwargs):
 
     # create figure
     fig, ax = plt.subplots(1, 1, figsize=(6,9))
@@ -75,7 +88,8 @@ def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
         ax.axvline(x=stim_time + stim_dur, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         ax.axvspan(stim_time, stim_time + stim_dur, alpha=.5, color=list(plt.cm.tab20c(19)[:3]), zorder=0)
         if stim_loc:
-            ax.axhline(y=stim_loc, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
+            for i in range(len(stim_loc)):
+                ax.axhline(y=stim_loc[i], color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         trans = ax.get_xaxis_transform() # x in data untis, y in axes fraction
         ax.annotate('Stimulation', xy=(stim_time+stim_dur/2, 1.01 ), xycoords=trans, ha='center', color=list(plt.cm.tab20c(16)[:3]))
 
@@ -103,12 +117,13 @@ def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
     handles.extend(custom_lines)
     # ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
     ax.legend(handles=handles, ncol=3, loc='lower center', bbox_to_anchor=(0, 1.02, 1, 0.2), prop={'size':9})
-
-    plt.savefig(name_fig, bbox_inches="tight")
+    plot_watermark(fig, git_kwargs)
+    plt.savefig(name_fig, bbox_inches="tight", pad_inches = 0)
+    plt.clf()
     plt.close()
 
 
-def plot_FR(t: list, rates: list, colors: list, cell_types: list[str]):
+def plot_FR(t: list, rates: list, colors: list, cell_types: list[str], **git_kwargs):
     # create figure
     fig, ax = plt.subplots(1, 1, figsize=(6,9))
     k=110
@@ -131,11 +146,11 @@ def plot_FR(t: list, rates: list, colors: list, cell_types: list[str]):
     handles, labels = ax.get_legend_handles_labels()
     handles.extend(custom_lines)
     ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
-
+    plot_watermark(fig, git_kwargs)
     plt.show()
 
 
-def save_FR(name_fig: str, t: list, rates: list, colors: list, cell_types: list[str]):
+def save_FR(name_fig: str, t: list, rates: list, colors: list, cell_types: list[str], **git_kwargs):
     # create figure
     fig, ax = plt.subplots(1, 1, figsize=(6,9))
     k=110
@@ -159,12 +174,13 @@ def save_FR(name_fig: str, t: list, rates: list, colors: list, cell_types: list[
     handles, labels = ax.get_legend_handles_labels()
     handles.extend(custom_lines)
     ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
-
-    plt.savefig(name_fig, bbox_inches="tight")
+    plot_watermark(fig, git_kwargs)
+    plt.savefig(name_fig, bbox_inches="tight", pad_inches = 0)
+    plt.clf()
     plt.close()
 
 
-def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], xlim: list=None, ylim: list=None): 
+def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], xlim: list=None, ylim: list=None, **git_kwargs): 
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 9), sharex=True, sharey=True)
     vmax = max(max(sxx[0].max(), sxx[1].max()), sxx[2].max())
@@ -192,11 +208,11 @@ def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], xlim: list
     cbar1.set_label("Power (arbitrary unit)")
     cbar2.set_label("Power (arbitrary unit)")
     cbar3.set_label("Power (arbitrary unit)")
-
+    plot_watermark(fig, git_kwargs)
     plt.show()
 
 
-def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[str], ylim: list=None): 
+def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[str], ylim: list=None, **git_kwargs): 
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 9), sharex=True, sharey=True)
     vmax = max(max(sxx[0].max(), sxx[1].max()), sxx[2].max())
@@ -223,8 +239,9 @@ def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[s
     cbar1.set_label("Power (arbitrary unit)")
     cbar2.set_label("Power (arbitrary unit)")
     cbar3.set_label("Power (arbitrary unit)")
-
-    plt.savefig(name_fig, bbox_inches="tight")
+    plot_watermark(fig, git_kwargs)
+    plt.savefig(name_fig, bbox_inches="tight", pad_inches = 0)
+    plt.clf()
     plt.close()
 
 
