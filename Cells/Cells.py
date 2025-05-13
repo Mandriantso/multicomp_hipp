@@ -10,7 +10,11 @@ class Cell():
                  x: float=0.,
                  y: float=0.,
                  z: float=0.,
-                 theta: float=0.,) -> None:
+                 theta: float=0.,
+                 x_intrinsic: float=None,
+                 y_intrinsic: float=None,
+                 x_flat: float=None,
+                 y_flat: float=None) -> None:
         self._gid = gid
 
         # morphology
@@ -27,6 +31,11 @@ class Cell():
         self.x = self.y = self.z = 0
         self._set_position(x, y, z)
         self._rotate_z(theta)
+
+        self.x_intrinsic = x_intrinsic
+        self.y_intrinsic = y_intrinsic
+        self.x_flat = x_flat
+        self.y_flat = y_flat
 
         # recording vectors
         self.spike_times = h.Vector()
@@ -185,9 +194,18 @@ class Cell():
 
 class PyramidalCell(Cell):
     name = "PyramidalCell"
-    def __init__(self, gid_soma: int, gid_axon: int, x: float = 0, y: float = 0, z: float = 0, theta: float = 0) -> None:
-        super().__init__(gid_soma, x, y, z, theta)
-        self.syn_dist = 500
+    def __init__(self, gid_soma: int, 
+                 gid_axon: int, 
+                 x: float = 0, 
+                 y: float = 0, 
+                 z: float = 0,
+                 theta: float = 0,
+                 x_intrinsic: float=None,
+                 y_intrinsic: float=None,
+                 x_flat: float=None,
+                 y_flat: float=None) -> None:
+        super().__init__(gid_soma, x, y, z, theta, x_intrinsic, y_intrinsic, x_flat, y_flat)
+        # self.syn_dist = 500
         self._gid_axon = gid_axon
 
         # recording vectors axon
@@ -607,9 +625,18 @@ class PyramidalCell(Cell):
 
 class BasketCell(Cell):
     name = "BasketCell"
-    def __init__(self, gid: int, x: float = 0, y: float = 0, z: float = 0, theta: float = 0) -> None:
-        super().__init__(gid, x, y, z, theta)
-        self.syn_dist = 470
+    def __init__(self, 
+                 gid: int, 
+                 x: float = 0, 
+                 y: float = 0, 
+                 z: float = 0, 
+                 theta: float = 0,
+                 x_intrinsic: float=None,
+                 y_intrinsic: float=None,
+                 x_flat: float=None,
+                 y_flat: float=None) -> None:
+        super().__init__(gid, x, y, z, theta, x_intrinsic, y_intrinsic, x_flat, y_flat)
+        # self.syn_dist = 470
 
     def _setup_morphology(self):
         # create sections
@@ -995,9 +1022,13 @@ class OLMCell(Cell):
                  x: float=0.,
                  y: float=0.,
                  z: float=0.,
-                 theta: float=np.pi) -> None:
-        super().__init__(gid, x, y, z, theta)
-        self.syn_dist = 705.13*1.5
+                 theta: float=np.pi,
+                 x_intrinsic: float=None,
+                 y_intrinsic: float=None,
+                 x_flat: float=None,
+                 y_flat: float=None) -> None:
+        super().__init__(gid, x, y, z, theta, x_intrinsic, y_intrinsic, x_flat, y_flat)
+        # self.syn_dist = 705.13*1.5
 
     def _setup_morphology(self):
         # create sections

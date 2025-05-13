@@ -8,7 +8,7 @@ from neuron import h
 from Cells.Cells import PyramidalCell, BasketCell, OLMCell
 from Scripts.Stimulation import *
 from Scripts.Network import *
-from Scripts.myplot import save_raster, save_FR, save_specgram
+from Scripts.myplot import save_raster, save_FR, save_specgram, plot_watermark
 from Scripts.utilities import *
 from Scripts.anatomy import *
 from Scripts.input import *
@@ -98,14 +98,14 @@ parser.add_argument('-p', '--parameters',
                     nargs='?',
                     metavar='-p',
                     type=str,
-                    default=os.path.join('configs', 'default_parameters_2_stim.json'),
+                    default=os.path.join('configs', 'parameters_inner_stim_CA1.json'),
                     help='Parameters file (json format)')
 
 parser.add_argument('-sd', '--save_dir',
                     nargs='?',
                     metavar='-sd',
                     type=str,
-                    default='extra_stim_results',
+                    default='extra_stim_cartesian_results',
                     help='Destination directory to save the results')
 
 args = parser.parse_args()
@@ -117,13 +117,20 @@ try:
     print('Using "{0}"'.format(filename))
 except Exception as e:
     print(e)
-    print('Using "default_parameters_2_stim.json"')
+    print('Using "parameters_inner_stim_CA1.json"')
     data = parameters._data
 parameters.dump(data) # TODO: update file after changing weights ?
 print()
 
 # Settings initialization
 settings.init(data)
+
+# for watermaks on figures -> reproducibility
+git_kwargs = {'timestamp': settings.timestamp,
+              'branch': settings.git_branch, 
+              'short_hash': settings.git_short_hash,
+              'script_name': os.path.basename(__file__),
+              'config_file': filename}
 
 RNG = np.random.default_rng()
 
@@ -146,7 +153,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S {settings.stim_amp}_mA new coords - inner stim"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -179,17 +186,22 @@ if rank == 0:
 
 
 # retrieve coordinates
-coordinates_dir = 'Positions'
+# coordinates_dir = 'Positions'
+coordinates_dir = 'positions_correct_layers_thickness'
 ca1_coordinates = os.path.join(coordinates_dir, 'ca1')
 
-ca1_pyr_coordinates_flat = np.load(os.path.join(ca1_coordinates, 'pyr_coordinates_flat_constrained.npy'))
-ca1_bc_coordinates_flat = np.load(os.path.join(ca1_coordinates, 'bc_coordinates_flat.npy'))
-ca1_olm_coordinates_flat = np.load(os.path.join(ca1_coordinates, 'olm_coordinates_flat.npy'))
+ca1_pyr_coords = np.load(os.path.join(ca1_coordinates, 'pyr_coordinates.npy'))
+ca1_bc_coords = np.load(os.path.join(ca1_coordinates, 'bc_coordinates.npy'))
+ca1_olm_coords = np.load(os.path.join(ca1_coordinates, 'olm_coordinates.npy'))
+
+# ca1_pyr_coordinates_flat = np.load(os.path.join(ca1_coordinates, 'pyr_coordinates_flat_constrained.npy'))
+# ca1_bc_coordinates_flat = np.load(os.path.join(ca1_coordinates, 'bc_coordinates_flat.npy'))
+# ca1_olm_coordinates_flat = np.load(os.path.join(ca1_coordinates, 'olm_coordinates_flat.npy'))
 
 # sort by x
-ca1_pyr_coordinates_flat = ca1_pyr_coordinates_flat[ca1_pyr_coordinates_flat[:,0].argsort()]
-ca1_bc_coordinates_flat = ca1_bc_coordinates_flat[ca1_bc_coordinates_flat[:,0].argsort()]
-ca1_olm_coordinates_flat = ca1_olm_coordinates_flat[ca1_olm_coordinates_flat[:,0].argsort()]
+# ca1_pyr_coordinates_flat = ca1_pyr_coordinates_flat[ca1_pyr_coordinates_flat[:,0].argsort()]
+# ca1_bc_coordinates_flat = ca1_bc_coordinates_flat[ca1_bc_coordinates_flat[:,0].argsort()]
+# ca1_olm_coordinates_flat = ca1_olm_coordinates_flat[ca1_olm_coordinates_flat[:,0].argsort()]
 
 # create cells
 n_pyr_ca1 = settings.N_CA1[0]
@@ -224,7 +236,10 @@ if rank == 0:
 
 ca1_pyr_cells = []
 for gid_soma, gid_axon in zip(gids_pyr_soma, gids_pyr_axon):
-    cell_ = PyramidalCell(gid_soma=gid_soma, gid_axon=gid_axon, x=ca1_pyr_coordinates_flat[int(gid_soma/2), 0], y=ca1_pyr_coordinates_flat[int(gid_soma/2), 1])
+    cell_ = PyramidalCell(gid_soma=gid_soma, gid_axon=gid_axon, 
+                          x=ca1_pyr_coords[int(gid_soma/2), 0], y=ca1_pyr_coords[int(gid_soma/2), 1], theta=ca1_pyr_coords[int(gid_soma/2), 2],
+                          x_intrinsic=ca1_pyr_coords[int(gid_soma/2), 3], y_intrinsic=ca1_pyr_coords[int(gid_soma/2), 4],
+                          x_flat=ca1_pyr_coords[int(gid_soma/2), 5], y_flat=ca1_pyr_coords[int(gid_soma/2), 6])
     ca1_pyr_cells.append(cell_)
     # associate gid to spike_detector
     pc.cell(gid_soma, cell_._spike_detector)
@@ -232,14 +247,20 @@ for gid_soma, gid_axon in zip(gids_pyr_soma, gids_pyr_axon):
 
 ca1_bc_cells = []
 for gid in gids_bc:
-    cell_ = BasketCell(gid=gid, x=ca1_bc_coordinates_flat[gid - 2*n_pyr_ca1,0], y=ca1_bc_coordinates_flat[gid - 2*n_pyr_ca1,1])
+    cell_ = BasketCell(gid=gid, 
+                       x=ca1_bc_coords[gid - 2*n_pyr_ca1, 0], y=ca1_bc_coords[gid - 2*n_pyr_ca1, 1], theta=ca1_bc_coords[gid - 2*n_pyr_ca1, 2],
+                       x_intrinsic=ca1_bc_coords[gid - 2*n_pyr_ca1, 3], y_intrinsic=ca1_bc_coords[gid - 2*n_pyr_ca1, 4],
+                       x_flat=ca1_bc_coords[gid - 2*n_pyr_ca1, 5], y_flat=ca1_bc_coords[gid - 2*n_pyr_ca1, 6])
     ca1_bc_cells.append(cell_)
     # associate gid to spike_detector
     pc.cell(gid, cell_._spike_detector)
 
 ca1_olm_cells = []
 for gid in gids_olm:
-    cell_ = OLMCell(gid=gid, x=ca1_olm_coordinates_flat[gid - 2*n_pyr_ca1 - n_bc_ca1,0], y=ca1_olm_coordinates_flat[gid - 2*n_pyr_ca1 - n_bc_ca1,1])
+    cell_ = OLMCell(gid=gid, 
+                    x=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 0], y=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 1], theta=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 2],
+                    x_intrinsic=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 3], y_intrinsic=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 4],
+                    x_flat=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 5], y_flat=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 6])
     ca1_olm_cells.append(cell_)
     # associate gid to spike_detector
     pc.cell(gid, cell_._spike_detector)
@@ -292,36 +313,37 @@ if rank == 0:
 # set connection matrix
 conn_mat = np.zeros((n_cells_ca1, n_cells_ca1))
 
+# using flattened coordinates
 for i in range(n_pyr_ca1):
     # for j in range(n_pyr_ca1):
-    #     dist_value = np.sqrt((ca1_pyr_coordinates_flat[i, 0] - ca1_pyr_coordinates_flat[j, 0])**2 + (ca1_pyr_coordinates_flat[i, 1] - ca1_pyr_coordinates_flat[j, 1])**2)
+    #     dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_pyr_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_pyr_coords[j, 6])**2)
     #     if settings.syn_dist_CA1[0] >= dist_value and i != j and conn_mat[i, :n_pyr_ca1].sum(axis=0) < 1 and conn_mat[:n_pyr_ca1, j].sum(axis=0) < 1:
     #         conn_mat[i, j] = 1
 
     for j in range(n_bc_ca1):
-        dist_value = np.sqrt((ca1_pyr_coordinates_flat[i, 0] - ca1_bc_coordinates_flat[j, 0])**2 + (ca1_pyr_coordinates_flat[i, 1] - ca1_bc_coordinates_flat[j, 1])**2)
+        dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_bc_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_bc_coords[j, 6])**2)
         if settings.syn_dist_CA1[0] >= dist_value:
             conn_mat[i, j + n_pyr_ca1] = 1
 
     for j in range(n_olm_ca1):
-        dist_value = np.sqrt((ca1_pyr_coordinates_flat[i, 0] - ca1_olm_coordinates_flat[j, 0])**2 + (ca1_pyr_coordinates_flat[i, 1] - ca1_olm_coordinates_flat[j, 1])**2)
+        dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_olm_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_olm_coords[j, 6])**2)
         if settings.syn_dist_CA1[0] >= dist_value:
             conn_mat[i, j + n_pyr_ca1 + n_bc_ca1] = 1
 
 for i in range(n_bc_ca1):
     for j in range(n_pyr_ca1):
-        dist_value = np.sqrt((ca1_bc_coordinates_flat[i, 0] - ca1_pyr_coordinates_flat[j, 0])**2 + (ca1_bc_coordinates_flat[i, 1] - ca1_pyr_coordinates_flat[j, 1])**2)
+        dist_value = np.sqrt((ca1_bc_coords[i, 5] - ca1_pyr_coords[j, 5])**2 + (ca1_bc_coords[i, 6] - ca1_pyr_coords[j, 6])**2)
         if settings.syn_dist_CA1[1] >= dist_value and conn_mat[n_pyr_ca1:n_pyr_ca1+n_bc_ca1, j].sum(axis=0) < 1: # only one conn. from BC to Pyr
             conn_mat[i + n_pyr_ca1, j] = 1
 
     for j in range(n_bc_ca1):
-        dist_value = np.sqrt((ca1_bc_coordinates_flat[i, 0] - ca1_bc_coordinates_flat[j, 0])**2 + (ca1_bc_coordinates_flat[i, 1] - ca1_bc_coordinates_flat[j, 1])**2)
+        dist_value = np.sqrt((ca1_bc_coords[i, 5] - ca1_bc_coords[j, 5])**2 + (ca1_bc_coords[i, 6] - ca1_bc_coords[j, 6])**2)
         if settings.syn_dist_CA1[1] >= dist_value and i != j:
             conn_mat[i + n_pyr_ca1, j + n_pyr_ca1] = 1
 
 for i in range(n_olm_ca1):
     for j in range(n_pyr_ca1):
-        dist_value = np.sqrt((ca1_olm_coordinates_flat[i, 0] - ca1_pyr_coordinates_flat[j, 0])**2 + (ca1_olm_coordinates_flat[i, 1] - ca1_pyr_coordinates_flat[j, 1])**2)
+        dist_value = np.sqrt((ca1_olm_coords[i, 5] - ca1_pyr_coords[j, 5])**2 + (ca1_olm_coords[i, 6] - ca1_pyr_coords[j, 6])**2)
         if settings.syn_dist_CA1[2] >= dist_value:
             conn_mat[i + n_pyr_ca1 + n_bc_ca1, j] = 1
 
@@ -682,7 +704,7 @@ if rank == 0:
     print('[+] Oscillatory input')
     sys.stdout.flush()
 
-amp = 6.0
+amp = 6 #0 #6.0
 osc_amp = h.Vector()
 # setting oscillatory input current
 for cell_ in ca1_pyr_cells:
@@ -732,7 +754,7 @@ stim_amp, stim_time = stim_waveform(stim_amp, stim_time, settings.stim_onset, se
 # set xtra mechanism in all cells
 for cell in ca1_cells:
     set_xtra_mechanism(cell)
-    set_rx(cell, settings.stim_pos, settings.rho)
+    set_rx_point_elec(cell, settings.stim_pos, settings.rho)
     attach_stim(cell, settings.ATTACHED__, stim_amp, stim_time)
 
 if rank == 0:
@@ -899,6 +921,8 @@ if rank == 0:
         f.write("remark :\n")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- BC - Pyr constrained to one connection max\n")
+        f.write("- Monopolar electrode placed outside hippocampus but in inner fold\n")
+        f.write("- Lamellar coordinates used\n")
         f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
         f.write("BC - Pyr weight : {}\n".format(settings.w_CA1[1][0]))
         f.write("BC - BC weight : {}\n".format(settings.w_CA1[1][1]))
@@ -930,48 +954,57 @@ if rank == 0:
     for cmsh in make_flat(cmesh_list):
         cmsh.set_clim(min(vlow), max(vhigh))
 
-    save_specgram(os.path.join(dirs['figures'], 'specgram.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"])
-    save_specgram(os.path.join(dirs['figures'], 'specgram_0_50.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0, 50])
+    save_specgram(os.path.join(dirs['figures'], 'specgram.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], git_kwargs=git_kwargs)
+    save_specgram(os.path.join(dirs['figures'], 'specgram_0_50.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0, 50], git_kwargs=git_kwargs)
 
     # save vectors
-    save_membrane_potential(os.path.join(dirs['data'], 'CA1_pyr_Vm.npz'), np.array(t_vec), potential_pyr) 
-    save_membrane_potential(os.path.join(dirs['data'], 'CA1_bc_Vm.npz'), np.array(t_vec), potential_bc) 
-    save_membrane_potential(os.path.join(dirs['data'], 'CA1_olm_Vm.npz'), np.array(t_vec), potential_olm) 
+    # save_membrane_potential(os.path.join(dirs['data'], 'CA1_pyr_Vm.npz'), np.array(t_vec), potential_pyr) 
+    # save_membrane_potential(os.path.join(dirs['data'], 'CA1_bc_Vm.npz'), np.array(t_vec), potential_bc) 
+    # save_membrane_potential(os.path.join(dirs['data'], 'CA1_olm_Vm.npz'), np.array(t_vec), potential_olm) 
 
-    save_membrane_potential(os.path.join(dirs['data'], 'CA1_pyr_i.npz'), np.array(t_vec), current_pyr) 
-    save_membrane_potential(os.path.join(dirs['data'], 'CA1_bc_i.npz'), np.array(t_vec), current_bc) 
-    save_membrane_potential(os.path.join(dirs['data'], 'CA1_olm_i.npz'), np.array(t_vec), current_olm) 
+    # save_membrane_potential(os.path.join(dirs['data'], 'CA1_pyr_i.npz'), np.array(t_vec), current_pyr) 
+    # save_membrane_potential(os.path.join(dirs['data'], 'CA1_bc_i.npz'), np.array(t_vec), current_bc) 
+    # save_membrane_potential(os.path.join(dirs['data'], 'CA1_olm_i.npz'), np.array(t_vec), current_olm) 
 
     np.savez(os.path.join(dirs['data'], 'CA1_pyr_spikemon.npz'), cell_id=np.array(id_spikes_pyr), t_spike=np.array(t_spikes_pyr))
     np.savez(os.path.join(dirs['data'], 'CA1_bc_spikemon.npz'), cell_id=np.array(id_spikes_bc), t_spike=np.array(t_spikes_bc))
     np.savez(os.path.join(dirs['data'], 'CA1_olm_spikemon.npz'), cell_id=np.array(id_spikes_olm), t_spike=np.array(t_spikes_olm))
 
+    stim_loc_pyr = np.abs(ca1_pyr_coords[:,5] - settings.stim_pos[0]).argmin()
+    stim_loc_bc = np.abs(ca1_bc_coords[:,5] - settings.stim_pos[0]).argmin()
+
     save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm], 
                     ['skyblue', 'lightpink', 'darkorange'], ['pyramidal cells', 'basket cells', 'olm cells'],
                     x_lim=[0, settings.duration],
-                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=settings.stim_pos[0])
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
+                    git_kwargs=git_kwargs)
     
     save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
                 [id_spikes_pyr, id_spikes_bc, id_spikes_olm], 
                 ['skyblue', 'lightpink', 'darkorange'], ['pyramidal cells', 'basket cells', 'olm cells'],
                 x_lim=[settings.duration - 1e3, settings.duration], size_raster=1., 
-                stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=settings.stim_pos[0]) # last second
+                stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
+                git_kwargs=git_kwargs) # last second
 
-    np.savez(os.path.join(dirs['data'], 'theta_input.npz'), t=np.array(t_vec), amplitude=np.array(osc_amp))
+    # np.savez(os.path.join(dirs['data'], 'theta_input.npz'), t=np.array(t_vec), amplitude=np.array(osc_amp))
     np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
 
-    fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
-    ax2.plot(np.array(t_vec), np.array(osc_amp), color='red')
-    ax2.set_xlabel("Time (ms)")
-    ax2.set_ylabel("nA")
-    plt.savefig(os.path.join(dirs['figures'], 'theta_input.png'), bbox_inches="tight")
+    # fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
+    # ax2.plot(np.array(t_vec), np.array(osc_amp), color='red')
+    # ax2.set_xlabel("Time (ms)")
+    # ax2.set_ylabel("nA")
+    # plot_watermark(fig2, git_kwargs=git_kwargs)
+    # plt.savefig(os.path.join(dirs['figures'], 'theta_input.png'), bbox_inches="tight")
 
     fig3, ax3 = plt.subplots(1,1,figsize=(9,3))
     ax3.plot(np.array(t_vec), np.array(i_noise), color='black')
     ax3.set_xlabel("Time (ms)")
     ax3.set_ylabel("nA")
+    plot_watermark(fig3, git_kwargs=git_kwargs)
     plt.savefig(os.path.join(dirs['figures'], 'i_noise.png'), bbox_inches="tight")
+    plt.clf()
+    plt.close()
 
     print("[+] Saving data done !")
     print("[+] Resizing vectors")
