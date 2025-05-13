@@ -176,13 +176,31 @@ _data = {
     },
     "connectivity": {
         "intra": {
-            "EC": {}, # TODO
-            "DG": {}, # TODO
-            "CA3": {}, # TODO
+            "EC": {
+                "syn_distance": { # µm
+                    "Pyramidal": 138.43 * 1.5, 
+                    "Basket": 255.65 * 1.5, 
+                    "OLM": 1057.695
+                }
+            }, # TODO : weights
+            "DG": {
+                "syn_distance": { # µm
+                    "Granule": 350.67 * 1.5, 
+                    "Basket": 87.14 * 1.5, 
+                    "HIPP": 568.34
+                }
+            }, # TODO : weights
+            "CA3": {
+                "syn_distance": { # µm
+                    "Pyramidal": 393.67 * 1.5, 
+                    "Basket": 155.42 * 1.5, 
+                    "OLM": 542.55 * 1.5
+                }
+            }, # TODO : weights
             "CA1": {
                 "syn_distance": { # µm
-                    "Pyramidal": 500,
-                    "Basket": 470,
+                    "Pyramidal": 216.68 * 1.5, #500,
+                    "Basket": 176.22 * 1.5, #470,
                     "OLM": 1057.695
                 },
                 "weight": { # µS
@@ -203,7 +221,13 @@ _data = {
                     }
                 }
             },
-            "Sub": {} # TODO
+            "Sub": {
+                "syn_distance": { # µm
+                    "Pyramidal": 728.01 * 1.5,
+                    "Basket": 264.33 * 1.5, 
+                    "OLM": 1057.695 * 1.5
+                }
+            } # TODO
         },
         "inter": {} # TODO
     },
@@ -336,7 +360,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='default_parameters_2_stim',
+                        default='parameters_original_syn_dist',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()

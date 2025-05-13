@@ -86,12 +86,12 @@ def init(data):
 
     # Neuronal population sizes > [Pyr, BC, OLM] or [Gran, BC, HIPP]
     global N_EC, N_DG, N_CA3, N_CA1, N_SUB #, N_all
-    # N_EC = [data['areas']['EC']['Pyramidal']['N'], data['areas']['EC']['Basket']['N'], data['areas']['EC']['OLM']['N']]
-    # N_DG = [data['areas']['DG']['Granule']['N'], data['areas']['DG']['Basket']['N'], data['areas']['DG']['OLM']['N']]
-    # N_CA3 = [data['areas']['CA3']['Pyramidal']['N'], data['areas']['CA3']['Basket']['N'], data['areas']['CA3']['OLM']['N']]
+#     N_EC = [data['areas']['EC']['Pyramidal']['N'], data['areas']['EC']['Basket']['N'], data['areas']['EC']['OLM']['N']]
+#     N_DG = [data['areas']['DG']['Granule']['N'], data['areas']['DG']['Basket']['N'], data['areas']['DG']['HIPP']['N']]
+#     N_CA3 = [data['areas']['CA3']['Pyramidal']['N'], data['areas']['CA3']['Basket']['N'], data['areas']['CA3']['OLM']['N']]
     N_CA1 = [data['areas']['CA1']['Pyramidal']['N'], data['areas']['CA1']['Basket']['N'], data['areas']['CA1']['OLM']['N']]
-    # N_SUB = [data['areas']['Sub']['Pyramidal']['N'], data['areas']['Sub']['Basket']['N'], data['areas']['Sub']['OLM']['N']]
-    # N_all = [N_EC, N_DG, N_CA3, N_CA1, N_SUB]
+#     N_SUB = [data['areas']['Sub']['Pyramidal']['N'], data['areas']['Sub']['Basket']['N'], data['areas']['Sub']['OLM']['N']]
+#     N_all = [N_EC, N_DG, N_CA3, N_CA1, N_SUB]
 
     # Population noise
     global sigma_EC, sigma_DG, sigma_CA3, sigma_CA1, sigma_SUB #, sigma_all
@@ -123,11 +123,11 @@ def init(data):
 
     # Synaptic distance intra-area [Pyr, BC, OLM] or [Granule, BC, HIPP]
     global syn_dist_EC, syn_dist_DG, syn_dist_CA3, syn_dist_CA1, syn_dist_SUB
-    # syn_dist_EC = [data['connectivity']['intra']['EC']['syn_distance']['Pyramidal'], data['connectivity']['intra']['EC']['syn_distance']['Basket'], data['connectivity']['intra']['EC']['syn_distance']['OLM']]
-    # syn_dist_DG = [data['connectivity']['intra']['DG']['syn_distance']['Granule'], data['connectivity']['intra']['DG']['syn_distance']['Basket'], data['connectivity']['intra']['DG']['syn_distance']['HIPP']]
-    # syn_dist_CA3 = [data['connectivity']['intra']['CA3']['syn_distance']['Pyramidal'], data['connectivity']['intra']['CA3']['syn_distance']['Basket'], data['connectivity']['intra']['CA3']['syn_distance']['OLM']]
+#     syn_dist_EC = [data['connectivity']['intra']['EC']['syn_distance']['Pyramidal'], data['connectivity']['intra']['EC']['syn_distance']['Basket'], data['connectivity']['intra']['EC']['syn_distance']['OLM']]
+#     syn_dist_DG = [data['connectivity']['intra']['DG']['syn_distance']['Granule'], data['connectivity']['intra']['DG']['syn_distance']['Basket'], data['connectivity']['intra']['DG']['syn_distance']['HIPP']]
+#     syn_dist_CA3 = [data['connectivity']['intra']['CA3']['syn_distance']['Pyramidal'], data['connectivity']['intra']['CA3']['syn_distance']['Basket'], data['connectivity']['intra']['CA3']['syn_distance']['OLM']]
     syn_dist_CA1 = [data['connectivity']['intra']['CA1']['syn_distance']['Pyramidal'], data['connectivity']['intra']['CA1']['syn_distance']['Basket'], data['connectivity']['intra']['CA1']['syn_distance']['OLM']]
-    # syn_dist_SUB = [data['connectivity']['intra']['Sub']['syn_distance']['Pyramidal'], data['connectivity']['intra']['Sub']['syn_distance']['Basket'], data['connectivity']['intra']['Sub']['syn_distance']['OLM']]
+#     syn_dist_SUB = [data['connectivity']['intra']['Sub']['syn_distance']['Pyramidal'], data['connectivity']['intra']['Sub']['syn_distance']['Basket'], data['connectivity']['intra']['Sub']['syn_distance']['OLM']]
 
     # Connection weights intra area [[Pyr-Pyr, Pyr-BC, Pyr-OLM], [BC-Pyr, BC-BC, BC-OLM], [OLM-Pyr, OLM-BC, OLM-OLM]]
     global w_EC, w_DG, w_CA3, w_CA1, w_SUB
