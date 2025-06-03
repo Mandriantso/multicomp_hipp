@@ -248,12 +248,13 @@ _data = {
     "stimulation": {
         "status": True,    # False -> no stimulation; True -> stimulation is on
         "target": "CA1",
-        "coordinates": (0.6105, 0.500, 0.0),  # point electrode coordinates using intrinsic coordinates system (x,y,z) (µm) 
-                                                # to be transformed either to flattened coordinates or to cartesian coordinates 
+        "coordinates": [1335.01730002, 
+                        5506.91961305, 
+                        0.0],  
         "rho": 300, # medium resistivity (ohm cm)
         "duration": 10.0, # (ms)
-        "onset": 4200, # (ms)
-        "I": -6.5 # (mA) stimulation amplitude
+        "onset": 2000, # (ms)
+        "I": -1 # (mA) stimulation amplitude
     },
     "simulation": {
         "duration": 5000.0, # (ms)
@@ -360,7 +361,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='parameters_original_syn_dist',
+                        default='parameters_outer_stim_CA1.json',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
