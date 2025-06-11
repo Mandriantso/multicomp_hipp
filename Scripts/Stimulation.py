@@ -2,16 +2,37 @@ import numpy as np
 from neuron import h
 
 
-def set_rx(cell, stim_pos, rho):
+def set_rx_point_elec(cell, stim_pos, rho):
 	for sec_id in cell.all:
 		if h.ismembrane('xtra', sec=sec_id):
 			for seg in sec_id:
 				r = np.sqrt((seg.x_xtra - stim_pos[0])**2 + (seg.y_xtra - stim_pos[1])**2 + (seg.z_xtra - stim_pos[2])**2)
-				if r==0:
-					r = seg.diam / 2
+				r = max(r, (400))
+				# if r==0:
+				# 	r = seg.diam / 2
 				
 				seg.rx_xtra = (rho / (4 * np.pi * r)) * 0.01
+
+
+def set_rx_bipolar(cell, stim_pos_1, stim_pos_2, rho): # TODO : finish computing rx from Ted's calcrx
+	# shape_coords = len(stim_pos_1)
+
+	# dist_elec = 0
+	# for i in range(shape_coords):
+	# 	dist_elec += (stim_pos_1[i] - stim_pos_2[i])**2
+	# dist_elec = np.sqrt(dist_elec)
+
+	for sec_id in cell.all:
+		if h.ismembrane('xtra', sec=sec_id):
+			for seg in sec_id:
+				r1 = np.sqrt((seg.x_xtra - stim_pos_1[0])**2 + (seg.y_xtra - stim_pos_1[1])**2 + (seg.z_xtra - stim_pos_1[2])**2)
+				r2 = np.sqrt((seg.x_xtra - stim_pos_2[0])**2 + (seg.y_xtra - stim_pos_2[1])**2 + (seg.z_xtra - stim_pos_2[2])**2)
+				# r = max(r, (800))
+				# if r==0:
+				# 	r = seg.diam / 2
 				
+				seg.rx_xtra = (rho / (4 * np.pi)) * ((1/r1) - (1/r2)) * 0.01
+
 
 def set_xtra_mechanism(cell):
     # insert xtra mechanism in all sections
