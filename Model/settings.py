@@ -72,7 +72,8 @@ stim_status = False
 stim_pos = [] # [x, y, z] coordinates of stimulation
 stim_dur = 1 # (ms)
 stim_onset = 100 # (ms)
-stim_amp = 0 # (mA)
+stim_amp = [] # (mA)
+stim_type = None # monopolar/bipolar
 ATTACHED__ = 0
 
 # Reproducibility settings
@@ -167,12 +168,13 @@ def init(data):
     rho = data['stimulation']['rho']
 
     # extracellular stimulation parameters
-    global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, ATTACHED__
+    global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, stim_type, ATTACHED__
     stim_status = data['stimulation']['status']
     stim_dur = data['stimulation']['duration']
     stim_amp = data['stimulation']['I']
     stim_onset = data['stimulation']['onset']
     stim_pos = data['stimulation']['coordinates']
+    stim_type = data['stimulation']['type']
     ATTACHED__ = 0
 
     # git stuff
