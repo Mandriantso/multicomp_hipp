@@ -17,7 +17,7 @@ from Model import settings
 import parameters
 
 
-results_dir = os.path.join(parent_dir, 'extra_stim_cartesian_results', '2025_06_11 13H38M42 [-1, 1]_mA new coords - bipolar stim - 100 ms')
+results_dir = os.path.join(parent_dir, 'extra_stim_cartesian_results', '2025_06_18 04H57M08 -1_mA new coords - bipolar stim perp - 100 ms')
 data_dir = os.path.join(results_dir, 'data')
 SVG_PATH = "./svg_files/"
 
@@ -28,13 +28,18 @@ try:
     print('Using "{0}"'.format(filename))
 except Exception as e:
     print(e)
-    print('Using "parameters_bipolar_stim_CA1_perp.json"')
+    print('Using "parameters_bipolar_stim_CA1_par.json"')
     data = parameters._data
 parameters.dump(data) 
 print()
 
 # Settings initialization
 settings.init(data)
+
+stim_type = settings.stim_type
+stim_pos = settings.stim_pos
+stim_on = settings.stim_onset
+stim_dur  = settings.stim_dur
 
 # get neuron coords
 positions_dir = os.path.join(parent_dir, 'positions_correct_layers_thickness', 'ca1')
@@ -45,11 +50,6 @@ olm_coords = np.load(os.path.join(positions_dir, 'olm_coordinates.npy'))
 pyr_coords = pyr_coords[pyr_coords[:,5].argsort()]
 bc_coords = bc_coords[bc_coords[:,5].argsort()]
 olm_coords = olm_coords[olm_coords[:,5].argsort()]
-
-stim_type = settings.stim_type
-stim_pos = settings.stim_pos
-stim_on = settings.stim_onset
-stim_dur  = settings.stim_dur
 
 # get spike monitors
 pyr_spikes = np.load(os.path.join(data_dir, 'CA1_pyr_spikemon.npz'))
@@ -116,15 +116,12 @@ max_size = 400
 
 # initial states
 pyr_facecolors = [cell_colors[0]] * len(pyr_coords)
-# pyr_facecolors = [[1., 1., 1., 1.]] * len(pyr_coords)
 pyr_facecolors = np.array(pyr_facecolors)
 
 bc_facecolors = [cell_colors[1]] * len(bc_coords)
-# bc_facecolors = [[1., 1., 1., 1.]] * len(bc_coords)
 bc_facecolors = np.array(bc_facecolors)
 
 olm_facecolors = [cell_colors[2]] * len(olm_coords)
-# olm_facecolors = [[1., 1., 1., 1.]] * len(olm_coords)
 olm_facecolors = np.array(olm_facecolors)
 
 pyr_sizes = [1.] * len(pyr_coords)
@@ -139,39 +136,19 @@ olm_sizes = np.array(olm_sizes)
 elec_facecolors = np.array([[1., 1., 1., 1.]])
 
 ## set figure
-fig = plt.figure(constrained_layout=True)
+fig = plt.figure(figsize=(12, 7), constrained_layout=True)
 
 gs = GridSpec(1, 2, figure=fig)
 ax1 = fig.add_subplot(gs[0, 0])
 ax2 = fig.add_subplot(gs[0, 1])
 
+"""
+    Neurons activity in CA1 slice
+"""
 ax1.plot(c1[regions_idx[2]:regions_idx[3]+1,0], c1[regions_idx[2]:regions_idx[3]+1,1], color=color[2])
 ax1.plot(d1[regions_idx[2]:regions_idx[3]+1,0], d1[regions_idx[2]:regions_idx[3]+1,1], color=color[2])
 ax1.plot([d1[regions_idx[2], 0], c1[regions_idx[2], 0]], [d1[regions_idx[2], 1], c1[regions_idx[2], 1]], color=color[2])
 ax1.plot([d1[regions_idx[3], 0], c1[regions_idx[3], 0]], [d1[regions_idx[3], 1], c1[regions_idx[3], 1]], color=color[2])
-
-## set parameters for animation
-dt = 1
-tv = np.arange(0, settings.duration, dt)
-# Twin = stim_dur - stim_on # 500ms window to animate, around the stimulation pulse
-# twin_idx = int(Twin/dt) # samples
-
-pyr_raster = np.zeros([len(tv), len(pyr_coords)], dtype=bool)
-bc_raster = np.zeros([len(tv), len(bc_coords)], dtype=bool)
-olm_raster = np.zeros([len(tv), len(olm_coords)], dtype=bool)
-elec_raster = np.zeros([len(tv), 1], dtype=bool)
-
-for idx in range(len(pyr_spk_t)):
-    # print(int(pyr_spk_id[idx]))
-    pyr_raster[int(pyr_spk_t[idx]), int(pyr_spk_id[idx])] = True
-
-for idx in range(len(bc_spk_t)):
-    bc_raster[int(bc_spk_t[idx]), int(len(pyr_coords)-bc_spk_id[idx])] = True
-
-for idx in range(len(olm_spk_t)):
-    olm_raster[int(olm_spk_t[idx]), int(len(pyr_coords)+len(bc_coords)-olm_spk_id[idx])] = True
-
-elec_raster[int(stim_on):int(stim_on+stim_dur),0] = True
 
 pyr_scat_fix = ax1.scatter(pyr_coords[:,0], pyr_coords[:,1], s=1, edgecolors=cell_colors[0], facecolors=cell_colors[0])
 bc_scat_fix = ax1.scatter(bc_coords[:,0], bc_coords[:,1], s=1, edgecolors=cell_colors[1], facecolors=cell_colors[1])
@@ -187,7 +164,7 @@ pyr_scat.set_alpha = 0.
 bc_scat.set_alpha = 0.
 olm_scat.set_alpha = 0.
 
-check_text = ax1.text(settings.stim_pos[0][0] - 2500, settings.stim_pos[0][1] + 2500, 'time = 0 ms', fontsize=12)
+check_text = ax1.text(settings.stim_pos[1][0] - 500, settings.stim_pos[1][1] + 250, f'time = {stim_on-600} ms', fontsize=12)
 
 
 """
@@ -216,6 +193,7 @@ sim_line = ax2.axvline(x=stim_on-600, color=list(plt.cm.tab20c(16)[:3]), ls='-',
 ## when spiketime -> filled
 ## when not -> empty
 def update(frame):
+    frame = frame + stim_on - 600
     check_text.set_text(f'time = {frame * 1} ms')
 
     # set update for electrode
@@ -229,10 +207,6 @@ def update(frame):
         elec_scat_2.set_facecolors(elec_facecolors)
 
     ## sizes
-    # pyr_sizes = pyr_scat.get_sizes()
-    # bc_sizes = pyr_scat.get_sizes()
-    # olm_sizes = pyr_scat.get_sizes()
-
     index_pyr = np.argwhere(pyr_sizes[(pyr_sizes > 1)] < max_size)
     index_bc = np.argwhere(bc_sizes[(bc_sizes > 1)] < max_size)
     index_olm = np.argwhere(olm_sizes[(olm_sizes > 1)] < max_size)
@@ -263,38 +237,29 @@ def update(frame):
     # put everything to inactive first
     # put the updated to active
     # pyramidal cells
-    # pyr_facecolors[:,3] =  0.
-    # pyr_facecolors[:] =  [1., 1., 1., 1.]
     index_active_pyr = np.argwhere(pyr_spk_t.astype(int) == frame * 1)
     if len(index_active_pyr) > 0:
         id_active_pyr = pyr_spk_id[index_active_pyr]
         pyr_facecolors[id_active_pyr.astype(int),3] =  1.
         pyr_sizes[id_active_pyr.astype(int)] = min_size
-        # pyr_facecolors[id_active_pyr.astype(int)] = cell_colors[0] 
     pyr_scat.set_facecolors(pyr_facecolors)
     pyr_scat.set_edgecolors(pyr_facecolors)
     
     # bc cells
-    # bc_facecolors[:,3] =  0.
-    # bc_facecolors[:] =  [1., 1., 1., 1.]
     index_active_bc = np.argwhere(bc_spk_t.astype(int) == frame * 1)
     if len(index_active_bc) > 0:
         id_active_bc = bc_spk_id[index_active_bc]
         bc_facecolors[id_active_bc.astype(int) - len(pyr_coords),3] =  1.
         bc_sizes[id_active_bc.astype(int) - len(pyr_coords)] = min_size
-        # bc_facecolors[id_active_bc.astype(int) - len(pyr_coords)] = cell_colors[1] 
     bc_scat.set_facecolors(bc_facecolors)
     bc_scat.set_edgecolors(bc_facecolors)
 
     # olm cells
-    # olm_facecolors[:,3] =  0.
-    # olm_facecolors[:] =  [1., 1., 1., 1.]
     index_active_olm = np.argwhere(olm_spk_t.astype(int) == frame * 1)
     if len(index_active_olm) > 0:
         id_active_olm = olm_spk_id[index_active_olm]
         olm_facecolors[id_active_olm.astype(int) - len(pyr_coords) - len(bc_coords),3] =  1.
         olm_sizes[id_active_olm.astype(int) - len(pyr_coords) - len(bc_coords)] = min_size
-        # olm_facecolors[id_active_olm.astype(int) - len(pyr_coords) - len(bc_coords)] = cell_colors[2] 
     olm_scat.set_facecolors(olm_facecolors)
     olm_scat.set_edgecolors(olm_facecolors)
 
@@ -304,17 +269,18 @@ def update(frame):
 
     sim_line.set_xdata([frame * 1])
 
-    return elec_scat_1, elec_scat_2, check_text, pyr_scat, bc_scat, olm_scat, sim_line,
+    return elec_scat_1, elec_scat_2, pyr_scat, bc_scat, olm_scat, sim_line, check_text, 
 
 ax1.axis('off')
 ax2.axis('off')
-ani = animation.FuncAnimation(fig=fig, func=update, frames=int(settings.duration/1), interval=1)
+# ani = animation.FuncAnimation(fig=fig, func=update, frames=int(settings.duration/1), interval=1)
+ani = animation.FuncAnimation(fig=fig, func=update, frames=int((stim_dur+1200)/1), interval=1)
 # ani.save(os.path.join(results_dir, 'activation_20fps.gif'), fps=20)
 # Writer = animation.writers['ffmpeg']
 # writer = Writer(fps=20)
-bar = tqdm(total=int(settings.duration/1), file=sys.stdout)
-FFwriter = animation.FFMpegWriter(fps=20)
-# ani.save(os.path.join(results_dir, 'activation_alpha_size_20fps_2.mp4'), writer=FFwriter, dpi=300, progress_callback = lambda i, n: bar.update(1))
+bar = tqdm(total=int((stim_dur+1200)/1), file=sys.stdout)
+FFwriter = animation.FFMpegWriter(fps=30)
+ani.save(os.path.join(results_dir, 'activation_alpha_size_30fps.mp4'), writer=FFwriter, dpi=300, progress_callback = lambda i, n: bar.update(1))
 bar.close()
 plt.show()
 
