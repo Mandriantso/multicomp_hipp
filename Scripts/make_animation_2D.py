@@ -17,11 +17,11 @@ from Model import settings
 import parameters
 
 
-results_dir = os.path.join(parent_dir, 'extra_stim_cartesian_results', '2025_06_18 04H57M08 -1_mA new coords - bipolar stim perp - 100 ms')
+results_dir = os.path.join(parent_dir, 'extra_stim_cartesian_results', '2025_06_06 11H31M42 2_mA new coords - inner stim - 100 ms')
 data_dir = os.path.join(results_dir, 'data')
 SVG_PATH = "./svg_files/"
 
-filename = os.path.join(parent_dir, 'configs', 'parameters_bipolar_stim_CA1_perp.json')
+filename = os.path.join(parent_dir, 'configs', 'parameters_inner_stim_CA1.json')
 
 try:
     data = parameters.load(filename)
@@ -157,14 +157,17 @@ olm_scat_fix = ax1.scatter(olm_coords[:,0], olm_coords[:,1], s=1, edgecolors=cel
 pyr_scat = ax1.scatter(pyr_coords[:,0], pyr_coords[:,1], s=pyr_sizes, edgecolors=pyr_facecolors, facecolors=pyr_facecolors)
 bc_scat = ax1.scatter(bc_coords[:,0], bc_coords[:,1], s=bc_sizes, edgecolors=bc_facecolors, facecolors=bc_facecolors)
 olm_scat = ax1.scatter(olm_coords[:,0], olm_coords[:,1], s=olm_sizes, edgecolors=olm_facecolors, facecolors=olm_facecolors)
-elec_scat_1 = ax1.scatter(settings.stim_pos[0][0], settings.stim_pos[0][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
-elec_scat_2 = ax1.scatter(settings.stim_pos[1][0], settings.stim_pos[1][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
+if stim_type == "bipolar":
+    elec_scat_1 = ax1.scatter(settings.stim_pos[0][0], settings.stim_pos[0][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
+    elec_scat_2 = ax1.scatter(settings.stim_pos[1][0], settings.stim_pos[1][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)  
+else:
+    elec_scat = ax1.scatter(settings.stim_pos[0], settings.stim_pos[1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
+
+check_text = ax1.text(0.01, 1., 'matplotlib', transform = ax1.transAxes)
 
 pyr_scat.set_alpha = 0.
 bc_scat.set_alpha = 0.
 olm_scat.set_alpha = 0.
-
-check_text = ax1.text(settings.stim_pos[1][0] - 500, settings.stim_pos[1][1] + 250, f'time = {stim_on-600} ms', fontsize=12)
 
 
 """
@@ -198,13 +201,19 @@ def update(frame):
 
     # set update for electrode
     if frame * 1 >= stim_on and frame * 1 < stim_on + stim_dur:
-            elec_facecolors[0] = cell_colors[3] 
-            elec_scat_1.set_facecolors(elec_facecolors)
-            elec_scat_2.set_facecolors(elec_facecolors)
+            elec_facecolors[0] = cell_colors[3]
+            if stim_type == "bipolar": 
+                elec_scat_1.set_facecolors(elec_facecolors)
+                elec_scat_2.set_facecolors(elec_facecolors)
+            else:
+                elec_scat.set_facecolors(elec_facecolors)
     else:
         elec_facecolors[0] = [1., 1., 1., 1.]
-        elec_scat_1.set_facecolors(elec_facecolors)
-        elec_scat_2.set_facecolors(elec_facecolors)
+        if stim_type == "bipolar":
+            elec_scat_1.set_facecolors(elec_facecolors)
+            elec_scat_2.set_facecolors(elec_facecolors)
+        else:
+            elec_scat.set_facecolors(elec_facecolors)
 
     ## sizes
     index_pyr = np.argwhere(pyr_sizes[(pyr_sizes > 1)] < max_size)
@@ -236,6 +245,7 @@ def update(frame):
     # update those neurons' facecolors
     # put everything to inactive first
     # put the updated to active
+
     # pyramidal cells
     index_active_pyr = np.argwhere(pyr_spk_t.astype(int) == frame * 1)
     if len(index_active_pyr) > 0:
@@ -269,7 +279,10 @@ def update(frame):
 
     sim_line.set_xdata([frame * 1])
 
-    return elec_scat_1, elec_scat_2, pyr_scat, bc_scat, olm_scat, sim_line, check_text, 
+    if stim_type == "bipolar":
+        return elec_scat_1, elec_scat_2, pyr_scat, bc_scat, olm_scat, sim_line, check_text, 
+    else:
+        return elec_scat, pyr_scat, bc_scat, olm_scat, sim_line, check_text, 
 
 ax1.axis('off')
 ax2.axis('off')
