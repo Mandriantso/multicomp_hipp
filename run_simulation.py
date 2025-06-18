@@ -98,7 +98,7 @@ parser.add_argument('-p', '--parameters',
                     nargs='?',
                     metavar='-p',
                     type=str,
-                    default=os.path.join('configs', 'parameters_inner_stim_CA1.json'),
+                    default=os.path.join('configs', 'parameters_outer_stim_CA1.json'),
                     help='Parameters file (json format)')
 
 parser.add_argument('-sd', '--save_dir',
@@ -117,7 +117,7 @@ try:
     print('Using "{0}"'.format(filename))
 except Exception as e:
     print(e)
-    print('Using "parameters_inner_stim_CA1.json"')
+    print('Using "parameters_bipolar_stim_CA1_par.json"')
     data = parameters._data
 parameters.dump(data) # TODO: update file after changing weights ?
 print()
@@ -126,7 +126,7 @@ print()
 settings.init(data)
 
 # for watermaks on figures -> reproducibility
-git_kwargs = {'timestamp': settings.timestamp,
+git_kwargs = {'timestamp': time.ctime(),
               'branch': settings.git_branch, 
               'short_hash': settings.git_short_hash,
               'script_name': os.path.basename(__file__),
@@ -153,7 +153,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S {settings.stim_amp}_mA new coords - inner stim"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S {settings.stim_amp}_mA new coords - outer stim - 100 ms"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -754,7 +754,10 @@ stim_amp, stim_time = stim_waveform(stim_amp, stim_time, settings.stim_onset, se
 # set xtra mechanism in all cells
 for cell in ca1_cells:
     set_xtra_mechanism(cell)
-    set_rx_point_elec(cell, settings.stim_pos, settings.rho)
+    if settings.stim_type == "bipolar":
+        set_rx_bipolar(cell, settings.stim_pos[0], settings.stim_pos[1], settings.rho)
+    else:
+        set_rx_point_elec(cell, settings.stim_pos, settings.rho)
     attach_stim(cell, settings.ATTACHED__, stim_amp, stim_time)
 
 if rank == 0:
@@ -923,6 +926,7 @@ if rank == 0:
         f.write("- BC - Pyr constrained to one connection max\n")
         f.write("- Monopolar electrode placed outside hippocampus but in inner fold\n")
         f.write("- Lamellar coordinates used\n")
+        f.write("- Higher amplitude than minimum amplitude to elicit APs on the closest neuron to electrode used (2 mA), from test_excitability_elec.ipynb\n")
         f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
         f.write("BC - Pyr weight : {}\n".format(settings.w_CA1[1][0]))
         f.write("BC - BC weight : {}\n".format(settings.w_CA1[1][1]))
@@ -954,8 +958,8 @@ if rank == 0:
     for cmsh in make_flat(cmesh_list):
         cmsh.set_clim(min(vlow), max(vhigh))
 
-    save_specgram(os.path.join(dirs['figures'], 'specgram.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], git_kwargs=git_kwargs)
-    save_specgram(os.path.join(dirs['figures'], 'specgram_0_50.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0, 50], git_kwargs=git_kwargs)
+    save_specgram(os.path.join(dirs['figures'], 'specgram.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], **git_kwargs)
+    save_specgram(os.path.join(dirs['figures'], 'specgram_0_50.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0, 50], **git_kwargs)
 
     # save vectors
     # save_membrane_potential(os.path.join(dirs['data'], 'CA1_pyr_Vm.npz'), np.array(t_vec), potential_pyr) 
@@ -970,22 +974,22 @@ if rank == 0:
     np.savez(os.path.join(dirs['data'], 'CA1_bc_spikemon.npz'), cell_id=np.array(id_spikes_bc), t_spike=np.array(t_spikes_bc))
     np.savez(os.path.join(dirs['data'], 'CA1_olm_spikemon.npz'), cell_id=np.array(id_spikes_olm), t_spike=np.array(t_spikes_olm))
 
-    stim_loc_pyr = np.abs(ca1_pyr_coords[:,5] - settings.stim_pos[0]).argmin()
-    stim_loc_bc = np.abs(ca1_bc_coords[:,5] - settings.stim_pos[0]).argmin()
+    # stim_loc_pyr = np.abs(ca1_pyr_coords[:,5] - settings.stim_pos[0]).argmin()
+    # stim_loc_bc = np.abs(ca1_bc_coords[:,5] - settings.stim_pos[0]).argmin()
 
     save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm], 
                     ['skyblue', 'lightpink', 'darkorange'], ['pyramidal cells', 'basket cells', 'olm cells'],
                     x_lim=[0, settings.duration],
-                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
-                    git_kwargs=git_kwargs)
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
+                    **git_kwargs)
     
     save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
                 [id_spikes_pyr, id_spikes_bc, id_spikes_olm], 
                 ['skyblue', 'lightpink', 'darkorange'], ['pyramidal cells', 'basket cells', 'olm cells'],
-                x_lim=[settings.duration - 1e3, settings.duration], size_raster=1., 
-                stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
-                git_kwargs=git_kwargs) # last second
+                x_lim=[settings.stim_onset - 600, settings.stim_onset + settings.stim_dur + 600], size_raster=1., 
+                stim_time=settings.stim_onset, stim_dur=settings.stim_dur, #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
+                **git_kwargs) # last second
 
     # np.savez(os.path.join(dirs['data'], 'theta_input.npz'), t=np.array(t_vec), amplitude=np.array(osc_amp))
     np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
@@ -994,14 +998,14 @@ if rank == 0:
     # ax2.plot(np.array(t_vec), np.array(osc_amp), color='red')
     # ax2.set_xlabel("Time (ms)")
     # ax2.set_ylabel("nA")
-    # plot_watermark(fig2, git_kwargs=git_kwargs)
+    # plot_watermark(fig2, **git_kwargs)
     # plt.savefig(os.path.join(dirs['figures'], 'theta_input.png'), bbox_inches="tight")
 
     fig3, ax3 = plt.subplots(1,1,figsize=(9,3))
     ax3.plot(np.array(t_vec), np.array(i_noise), color='black')
     ax3.set_xlabel("Time (ms)")
     ax3.set_ylabel("nA")
-    plot_watermark(fig3, git_kwargs=git_kwargs)
+    plot_watermark(fig3, **git_kwargs)
     plt.savefig(os.path.join(dirs['figures'], 'i_noise.png'), bbox_inches="tight")
     plt.clf()
     plt.close()
