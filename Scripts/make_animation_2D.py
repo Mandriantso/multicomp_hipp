@@ -16,18 +16,18 @@ from Model import settings
 import parameters
 
 
-results_dir = os.path.join(parent_dir, 'extra_stim_cartesian_results', '2025_06_06 11H31M42 2_mA new coords - inner stim - 100 ms')
+results_dir = os.path.join(parent_dir, 'extra_stim_cartesian_results', '2025_06_11 13H38M42 [-1, 1]_mA new coords - bipolar stim - 100 ms')
 data_dir = os.path.join(results_dir, 'data')
 SVG_PATH = "./svg_files/"
 
-filename = os.path.join(parent_dir, 'configs', 'parameters_inner_stim_CA1.json')
+filename = os.path.join(parent_dir, 'configs', 'parameters_bipolar_stim_CA1_perp.json')
 
 try:
     data = parameters.load(filename)
     print('Using "{0}"'.format(filename))
 except Exception as e:
     print(e)
-    print('Using "parameters_inner_stim_CA1.json"')
+    print('Using "parameters_bipolar_stim_CA1_perp.json"')
     data = parameters._data
 parameters.dump(data) 
 print()
@@ -172,13 +172,14 @@ olm_scat_fix = ax.scatter(olm_coords[:,0], olm_coords[:,1], s=1, edgecolors=cell
 pyr_scat = ax.scatter(pyr_coords[:,0], pyr_coords[:,1], s=pyr_sizes, edgecolors=pyr_facecolors, facecolors=pyr_facecolors)
 bc_scat = ax.scatter(bc_coords[:,0], bc_coords[:,1], s=bc_sizes, edgecolors=bc_facecolors, facecolors=bc_facecolors)
 olm_scat = ax.scatter(olm_coords[:,0], olm_coords[:,1], s=olm_sizes, edgecolors=olm_facecolors, facecolors=olm_facecolors)
-elec_scat = ax.scatter(settings.stim_pos[0], settings.stim_pos[1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
+elec_scat_1 = ax.scatter(settings.stim_pos[0][0], settings.stim_pos[0][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
+elec_scat_2 = ax.scatter(settings.stim_pos[1][0], settings.stim_pos[1][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
 
 pyr_scat.set_alpha = 0.
 bc_scat.set_alpha = 0.
 olm_scat.set_alpha = 0.
 
-check_text = ax.text(settings.stim_pos[0] - 2500, settings.stim_pos[1] + 2500, 'time = 0 ms', fontsize=12)
+check_text = ax.text(settings.stim_pos[0][0] - 2500, settings.stim_pos[0][1] + 2500, 'time = 0 ms', fontsize=12)
 
 ## set update function for animation
 ## when spiketime -> filled
@@ -189,10 +190,12 @@ def update(frame):
     # set update for electrode
     if frame * 1 >= stim_on and frame * 1 < stim_on + stim_dur:
             elec_facecolors[0] = cell_colors[3] 
-            elec_scat.set_facecolors(elec_facecolors)
+            elec_scat_1.set_facecolors(elec_facecolors)
+            elec_scat_2.set_facecolors(elec_facecolors)
     else:
         elec_facecolors[0] = [1., 1., 1., 1.]
-        elec_scat.set_facecolors(elec_facecolors)
+        elec_scat_1.set_facecolors(elec_facecolors)
+        elec_scat_2.set_facecolors(elec_facecolors)
 
     ## sizes
     # pyr_sizes = pyr_scat.get_sizes()
@@ -268,7 +271,7 @@ def update(frame):
     bc_scat.set_sizes(bc_sizes)
     olm_scat.set_sizes(olm_sizes)
 
-    return elec_scat, check_text, pyr_scat, bc_scat, olm_scat,
+    return elec_scat_1, elec_scat_2, check_text, pyr_scat, bc_scat, olm_scat,
 
 ax.axis('off')
 ani = animation.FuncAnimation(fig=fig, func=update, frames=int(settings.duration/1), interval=1)
@@ -277,7 +280,7 @@ ani = animation.FuncAnimation(fig=fig, func=update, frames=int(settings.duration
 # writer = Writer(fps=20)
 bar = tqdm(total=int(settings.duration/1), file=sys.stdout)
 FFwriter = animation.FFMpegWriter(fps=20)
-ani.save(os.path.join(results_dir, 'activation_alpha_size_20fps.mp4'), writer=FFwriter, dpi=300, progress_callback = lambda i, n: bar.update(1))
+ani.save(os.path.join(results_dir, 'activation_alpha_size_20fps_2.mp4'), writer=FFwriter, dpi=300, progress_callback = lambda i, n: bar.update(1))
 bar.close()
 plt.show()
 
