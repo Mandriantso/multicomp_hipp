@@ -250,19 +250,19 @@ _data = {
         "type": "bipolar",    # False -> no stimulation; True -> stimulation is on
         "target": "CA1",
         "coordinates": [[
-            1335.02,
-            5506.92,
+            265.02,
+            4721.37,
             0.0          
         ], [
-            643.11,
-            6837.81,
+            2337.461,
+            5886.57,
             0.0
         ]  
         ],  
         "rho": 300, # medium resistivity (ohm cm)
         "duration": 100.0, # (ms)
         "onset": 2000, # (ms)
-        "I": [-1, 1] # (mA) stimulation amplitude
+        "I": -1 # (mA) stimulation amplitude
     },
     "simulation": {
         "duration": 5000.0, # (ms)
@@ -369,7 +369,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='parameters_bipolar_stim_CA1_perp',
+                        default='parameters_bipolar_stim_CA1_par',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
