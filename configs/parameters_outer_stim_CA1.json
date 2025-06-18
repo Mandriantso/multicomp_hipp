@@ -189,7 +189,7 @@
             "CA1": {
                 "syn_distance": {
                     "Pyramidal": 325.02,
-                    "Basket": 470,
+                    "Basket": 264.33,
                     "OLM": 1057.695
                 },
                 "weight": {
@@ -239,12 +239,12 @@
         "type": "monopolar",
         "target": "CA1",
         "coordinates": [
-            2718.83,
-            2845.14,
+            1335.02,
+            5506.92,
             0.0
         ],
         "rho": 300,
-        "duration": 100.0,
+        "duration": 10.0,
         "onset": 2000,
         "I": 2
     },
@@ -268,8 +268,8 @@
             "vmax": 1.0
         }
     },
-    "git_short_hash": "30018e6",
-    "timestamp": "Mon Apr 28 17:26:28 2025",
+    "git_short_hash": "7e3fe10",
+    "timestamp": "Tue Jun  3 15:14:30 2025",
     "git_branch": "main",
-    "git_hash": "30018e6e8bb615963a711f42b42d53ec6c21366e"
+    "git_hash": "7e3fe10799ec3d09af4fd73d1687cc4cb90101d8"
 }
