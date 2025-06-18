@@ -8,6 +8,7 @@ sys.path.append(parent_dir)
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.gridspec import GridSpec
 from tqdm.autonotebook import tqdm
 
 from Scripts.svg import *
@@ -45,7 +46,10 @@ pyr_coords = pyr_coords[pyr_coords[:,5].argsort()]
 bc_coords = bc_coords[bc_coords[:,5].argsort()]
 olm_coords = olm_coords[olm_coords[:,5].argsort()]
 
+stim_type = settings.stim_type
 stim_pos = settings.stim_pos
+stim_on = settings.stim_onset
+stim_dur  = settings.stim_dur
 
 # get spike monitors
 pyr_spikes = np.load(os.path.join(data_dir, 'CA1_pyr_spikemon.npz'))
@@ -60,6 +64,9 @@ bc_spk_t = bc_spikes['t_spike']
 olm_spikes = np.load(os.path.join(data_dir, 'CA1_olm_spikemon.npz'))
 olm_spk_id = olm_spikes['cell_id']
 olm_spk_t = olm_spikes['t_spike']
+
+t_spike_monitors = [pyr_spk_t, bc_spk_t, olm_spk_t]
+id_spike_monitors = [pyr_spk_id, bc_spk_id, olm_spk_id]
 
 # animation
 
@@ -132,21 +139,22 @@ olm_sizes = np.array(olm_sizes)
 elec_facecolors = np.array([[1., 1., 1., 1.]])
 
 ## set figure
-fig, ax = plt.subplots(figsize=(15, 15))
+fig = plt.figure(constrained_layout=True)
 
-ax.plot(c1[regions_idx[2]:regions_idx[3]+1,0], c1[regions_idx[2]:regions_idx[3]+1,1], color=color[2])
-ax.plot(d1[regions_idx[2]:regions_idx[3]+1,0], d1[regions_idx[2]:regions_idx[3]+1,1], color=color[2])
-ax.plot([d1[regions_idx[2], 0], c1[regions_idx[2], 0]], [d1[regions_idx[2], 1], c1[regions_idx[2], 1]], color=color[2])
-ax.plot([d1[regions_idx[3], 0], c1[regions_idx[3], 0]], [d1[regions_idx[3], 1], c1[regions_idx[3], 1]], color=color[2])
+gs = GridSpec(1, 2, figure=fig)
+ax1 = fig.add_subplot(gs[0, 0])
+ax2 = fig.add_subplot(gs[0, 1])
+
+ax1.plot(c1[regions_idx[2]:regions_idx[3]+1,0], c1[regions_idx[2]:regions_idx[3]+1,1], color=color[2])
+ax1.plot(d1[regions_idx[2]:regions_idx[3]+1,0], d1[regions_idx[2]:regions_idx[3]+1,1], color=color[2])
+ax1.plot([d1[regions_idx[2], 0], c1[regions_idx[2], 0]], [d1[regions_idx[2], 1], c1[regions_idx[2], 1]], color=color[2])
+ax1.plot([d1[regions_idx[3], 0], c1[regions_idx[3], 0]], [d1[regions_idx[3], 1], c1[regions_idx[3], 1]], color=color[2])
 
 ## set parameters for animation
 dt = 1
-T = settings.duration
-tv = np.arange(0, T, dt)
-stim_on = settings.stim_onset
-stim_dur  = settings.stim_dur
-Twin = T - stim_on # 500ms window to animate, around the stimulation pulse
-twin_idx = int(Twin/dt) # samples
+tv = np.arange(0, settings.duration, dt)
+# Twin = stim_dur - stim_on # 500ms window to animate, around the stimulation pulse
+# twin_idx = int(Twin/dt) # samples
 
 pyr_raster = np.zeros([len(tv), len(pyr_coords)], dtype=bool)
 bc_raster = np.zeros([len(tv), len(bc_coords)], dtype=bool)
@@ -165,22 +173,45 @@ for idx in range(len(olm_spk_t)):
 
 elec_raster[int(stim_on):int(stim_on+stim_dur),0] = True
 
-pyr_scat_fix = ax.scatter(pyr_coords[:,0], pyr_coords[:,1], s=1, edgecolors=cell_colors[0], facecolors=cell_colors[0])
-bc_scat_fix = ax.scatter(bc_coords[:,0], bc_coords[:,1], s=1, edgecolors=cell_colors[1], facecolors=cell_colors[1])
-olm_scat_fix = ax.scatter(olm_coords[:,0], olm_coords[:,1], s=1, edgecolors=cell_colors[2], facecolors=cell_colors[2])
+pyr_scat_fix = ax1.scatter(pyr_coords[:,0], pyr_coords[:,1], s=1, edgecolors=cell_colors[0], facecolors=cell_colors[0])
+bc_scat_fix = ax1.scatter(bc_coords[:,0], bc_coords[:,1], s=1, edgecolors=cell_colors[1], facecolors=cell_colors[1])
+olm_scat_fix = ax1.scatter(olm_coords[:,0], olm_coords[:,1], s=1, edgecolors=cell_colors[2], facecolors=cell_colors[2])
 
-pyr_scat = ax.scatter(pyr_coords[:,0], pyr_coords[:,1], s=pyr_sizes, edgecolors=pyr_facecolors, facecolors=pyr_facecolors)
-bc_scat = ax.scatter(bc_coords[:,0], bc_coords[:,1], s=bc_sizes, edgecolors=bc_facecolors, facecolors=bc_facecolors)
-olm_scat = ax.scatter(olm_coords[:,0], olm_coords[:,1], s=olm_sizes, edgecolors=olm_facecolors, facecolors=olm_facecolors)
-elec_scat_1 = ax.scatter(settings.stim_pos[0][0], settings.stim_pos[0][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
-elec_scat_2 = ax.scatter(settings.stim_pos[1][0], settings.stim_pos[1][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
+pyr_scat = ax1.scatter(pyr_coords[:,0], pyr_coords[:,1], s=pyr_sizes, edgecolors=pyr_facecolors, facecolors=pyr_facecolors)
+bc_scat = ax1.scatter(bc_coords[:,0], bc_coords[:,1], s=bc_sizes, edgecolors=bc_facecolors, facecolors=bc_facecolors)
+olm_scat = ax1.scatter(olm_coords[:,0], olm_coords[:,1], s=olm_sizes, edgecolors=olm_facecolors, facecolors=olm_facecolors)
+elec_scat_1 = ax1.scatter(settings.stim_pos[0][0], settings.stim_pos[0][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
+elec_scat_2 = ax1.scatter(settings.stim_pos[1][0], settings.stim_pos[1][1], s=400, edgecolors=cell_colors[3], facecolors=elec_facecolors)
 
 pyr_scat.set_alpha = 0.
 bc_scat.set_alpha = 0.
 olm_scat.set_alpha = 0.
 
-check_text = ax.text(settings.stim_pos[0][0] - 2500, settings.stim_pos[0][1] + 2500, 'time = 0 ms', fontsize=12)
+check_text = ax1.text(settings.stim_pos[0][0] - 2500, settings.stim_pos[0][1] + 2500, 'time = 0 ms', fontsize=12)
 
+
+"""
+    Making raster plot
+"""
+# make raster plot
+# check if several spike_monitors or just one
+for i in range(len(t_spike_monitors)):
+    ax2.scatter(t_spike_monitors[i], id_spike_monitors[i], s=1., marker='o', color=cell_colors[i])
+
+# plot span for stimulation if stimulation
+if stim_on and stim_dur:
+    ax2.axvline(x=stim_on, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
+    ax2.axvline(x=stim_on + stim_dur, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
+    ax2.axvspan(stim_on, stim_on + stim_dur, alpha=.5, color=list(plt.cm.tab20c(19)[:3]), zorder=0)
+    trans = ax2.get_xaxis_transform() # x in data untis, y in axes fraction
+    ax2.annotate('Stimulation', xy=(stim_on+stim_dur/2, 1.01 ), xycoords=trans, ha='center', color=list(plt.cm.tab20c(16)[:3]))
+    
+# set axes
+ax2.set_xlim(stim_on - 600, stim_on + stim_dur + 600)
+
+sim_line = ax2.axvline(x=stim_on-600, color=list(plt.cm.tab20c(16)[:3]), ls='-', linewidth=2, zorder=10)
+
+   
 ## set update function for animation
 ## when spiketime -> filled
 ## when not -> empty
@@ -271,16 +302,19 @@ def update(frame):
     bc_scat.set_sizes(bc_sizes)
     olm_scat.set_sizes(olm_sizes)
 
-    return elec_scat_1, elec_scat_2, check_text, pyr_scat, bc_scat, olm_scat,
+    sim_line.set_xdata([frame * 1])
 
-ax.axis('off')
+    return elec_scat_1, elec_scat_2, check_text, pyr_scat, bc_scat, olm_scat, sim_line,
+
+ax1.axis('off')
+ax2.axis('off')
 ani = animation.FuncAnimation(fig=fig, func=update, frames=int(settings.duration/1), interval=1)
 # ani.save(os.path.join(results_dir, 'activation_20fps.gif'), fps=20)
 # Writer = animation.writers['ffmpeg']
 # writer = Writer(fps=20)
 bar = tqdm(total=int(settings.duration/1), file=sys.stdout)
 FFwriter = animation.FFMpegWriter(fps=20)
-ani.save(os.path.join(results_dir, 'activation_alpha_size_20fps_2.mp4'), writer=FFwriter, dpi=300, progress_callback = lambda i, n: bar.update(1))
+# ani.save(os.path.join(results_dir, 'activation_alpha_size_20fps_2.mp4'), writer=FFwriter, dpi=300, progress_callback = lambda i, n: bar.update(1))
 bar.close()
 plt.show()
 
