@@ -1172,6 +1172,365 @@ class OLMCell(Cell):
 
 
        
+class SchafferCollateral(Cell):
+    """
+        Taken from MRG axon of Mirzakhalili 2018
+    """
+    
+    name = "SchafferCollateral"
+
+    def __init__(self, gid: int,
+                 axon_trajectory: np.array,
+                 x: float=0.,
+                 y: float=0.,
+                 z: float=0.,
+                 theta: float=0,
+                 x_intrinsic: float=None,
+                 y_intrinsic: float=None,
+                 x_flat: float=None,
+                 y_flat: float=None) -> None:
+
+        self.paralength1 = 3.0
+        self.nodelength = 1.0
+        self.space_p1 = 0.002
+        self.space_p2 = 0.004
+        self.space_i = 0.004
+
+        self.fiberD = 2.0
+        self.deltax = 117
+        self.axon_trajectory = axon_trajectory
+
+        self.node_coordinates = self._find_node_coordinates()
+
+        self.nstins = 6
+        self.axonnodes = np.shape(self.node_coordinates)[0]
+
+        self.axonD = 1.6
+        self.nodeD = 1.4
+        self.paraD1 = 1.4
+        self.paraD2 = 1.6
+        self.paralength2 = 10
+        self.nl = 30
+        self.interlength = (self.deltax - self.nodelength - (2 * self.paralength1) - (2 * self.paralength2))/self.nstins
+
+        self.paranodes1 = 2 * (self.axonnodes - 1)
+        self.paranodes2 = 2 * (self.axonnodes - 1)
+        self.axoninter = self.nstins * (self.axonnodes - 1)
+        
+        super().__init__(gid, x, y, z, theta, x_intrinsic, y_intrinsic, x_flat, y_flat) 
+
+    def _setup_morphology(self):
+        # create sections
+        self.nodes = list() #h.SectionList()
+        for i in range(self.axonnodes):
+            self.nodes.append(h.Section(name=f"node{i}", cell=self))
+        
+        self.MYSA = list() #h.SectionList()
+        for i in range(self.paranodes1):
+            self.MYSA.append(h.Section(name=f"mysa{i}", cell=self))
+
+        self.FLUT = list() #h.SectionList()
+        for i in range(self.paranodes2):
+            self.FLUT.append(h.Section(name=f"flut{i}", cell=self))
+
+        self.STIN = list() # h.SectionList()
+        for i in range(self.axoninter):
+            self.STIN.append(h.Section(name=f"stin{i}", cell=self))
+
+        self.soma = self.nodes[0]
+
+        # connect sections
+        for i in range(self.axonnodes - 1):
+            self.MYSA[2*i].connect(self.nodes[i](1), 0)
+            self.FLUT[2*i].connect(self.MYSA[2*i](1), 0)
+            self.STIN[self.nstins*i].connect(self.FLUT[2*i](1), 0)
+            self.STIN[self.nstins*i+1].connect(self.STIN[self.nstins*i](1), 0) 
+            self.STIN[self.nstins*i+2].connect(self.STIN[self.nstins*i+1](1), 0)
+            self.STIN[self.nstins*i+3].connect(self.STIN[self.nstins*i+2](1), 0)
+            self.STIN[self.nstins*i+4].connect(self.STIN[self.nstins*i+3](1), 0)	
+            self.STIN[self.nstins*i+5].connect(self.STIN[self.nstins*i+4](1), 0) 	
+            self.FLUT[2*i+1].connect(self.STIN[self.nstins*i+5](1), 0) 
+            self.MYSA[2*i+1].connect(self.FLUT[2*i+1](1), 0) 
+            self.nodes[i+1].connect(self.MYSA[2*i+1](1), 0) 
+
+        # set basic shape
+        for sec in self.nodes:
+            h.pt3dclear(sec=sec)
+        
+        for sec in self.MYSA:
+            h.pt3dclear(sec=sec)
+
+        for sec in self.FLUT:
+            h.pt3dclear(sec=sec)
+
+        for sec in self.STIN:
+            h.pt3dclear(sec=sec)
+
+        for i in range(self.axonnodes - 1):
+            x0 = self.node_coordinates[i, 0] 
+            y0 = self.node_coordinates[i, 1] 
+            z0 = self.node_coordinates[i, 2] 
+            x1 = self.node_coordinates[i+1, 0] 
+            y1 = self.node_coordinates[i+1, 1] 
+            z1 = self.node_coordinates[i+1, 2] 
+            P0P1 = np.sqrt((x1 - x0)**2 + (y1 - y0)**2 + (z1 - z0)**2)
+
+            if i==0: # define the first node of the axon, only need to define for first node, because remaining nodes are defined at the end of the loop
+                t0 = (-1*self.nodelength/2)/P0P1
+                t1 = t0 + self.nodelength/P0P1
+                xx0 = (1 - t0) * x0 + t0 * x1
+                yy0 = (1 - t0) * y0 + t0 * y1
+                zz0 = (1 - t0) * z0 + t0 * z1
+                xx1 = (1 - t1) * x0 + t1 * x1
+                yy1 = (1 - t1) * y0 + t1 * y1
+                zz1 = (1 - t1) * z0 + t1 * z1
+
+                h.pt3dadd(xx0, yy0, zz0, self.nodeD, sec=self.nodes[i])
+                h.pt3dadd(xx1, yy1, zz1, self.nodeD, sec=self.nodes[i])
+
+            # first MYSA compartment
+            t0 = t1 #self.nodelength/2/P0P1
+            t1 = t0 + self.paralength1/P0P1
+            xx0 = (1 - t0) * x0 + t0 * x1
+            yy0 = (1 - t0) * y0 + t0 * y1
+            zz0 = (1 - t0) * z0 + t0 * z1
+            xx1 = (1 - t1) * x0 + t1 * x1
+            yy1 = (1 - t1) * y0 + t1 * y1
+            zz1 = (1 - t1) * z0 + t1 * z1
+
+            h.pt3dadd(xx0, yy0, zz0, self.fiberD, sec=self.MYSA[2*i])
+            h.pt3dadd(xx1, yy1, zz1, self.fiberD, sec=self.MYSA[2*i])
+
+            # first FLUT compartment
+            t0 = t1
+            t1 = t0 + self.paralength2/P0P1
+            xx0 = (1 - t0) * x0 + t0 * x1
+            yy0 = (1 - t0) * y0 + t0 * y1
+            zz0 = (1 - t0) * z0 + t0 * z1
+            xx1 = (1 - t1) * x0 + t1 * x1
+            yy1 = (1 - t1) * y0 + t1 * y1
+            zz1 = (1 - t1) * z0 + t1 * z1
+
+            h.pt3dadd(xx0, yy0, zz0, self.fiberD, sec=self.FLUT[2*i])
+            h.pt3dadd(xx1, yy1, zz1, self.fiberD, sec=self.FLUT[2*i])
+
+            # STIN compartments
+            for gg in range(self.nstins):
+                t0 = t1
+                t1 = t0 + self.interlength/P0P1
+                xx0 = (1 - t0) * x0 + t0 * x1
+                yy0 = (1 - t0) * y0 + t0 * y1
+                zz0 = (1 - t0) * z0 + t0 * z1
+                xx1 = (1 - t1) * x0 + t1 * x1
+                yy1 = (1 - t1) * y0 + t1 * y1
+                zz1 = (1 - t1) * z0 + t1 * z1
+
+                h.pt3dadd(xx0, yy0, zz0, self.fiberD, sec=self.STIN[self.nstins*i+gg])
+                h.pt3dadd(xx1, yy1, zz1, self.fiberD, sec=self.STIN[self.nstins*i+gg])
+
+            # second FLUT compartment
+            t0 = t1
+            t1 = t0 + self.paralength2/P0P1
+            xx0 = (1 - t0) * x0 + t0 * x1
+            yy0 = (1 - t0) * y0 + t0 * y1
+            zz0 = (1 - t0) * z0 + t0 * z1
+            xx1 = (1 - t1) * x0 + t1 * x1
+            yy1 = (1 - t1) * y0 + t1 * y1
+            zz1 = (1 - t1) * z0 + t1 * z1
+
+            h.pt3dadd(xx0, yy0, zz0, self.fiberD, sec=self.FLUT[2*i+1])
+            h.pt3dadd(xx1, yy1, zz1, self.fiberD, sec=self.FLUT[2*i+1])
+
+            # second MYSA compartment
+            t0 = t1
+            t1 = t0 + self.paralength1/P0P1
+            xx0 = (1 - t0) * x0 + t0 * x1
+            yy0 = (1 - t0) * y0 + t0 * y1
+            zz0 = (1 - t0) * z0 + t0 * z1
+            xx1 = (1 - t1) * x0 + t1 * x1
+            yy1 = (1 - t1) * y0 + t1 * y1
+            zz1 = (1 - t1) * z0 + t1 * z1
+
+            h.pt3dadd(xx0, yy0, zz0, self.fiberD, sec=self.MYSA[2*i+1])
+            h.pt3dadd(xx1, yy1, zz1, self.fiberD, sec=self.MYSA[2*i+1])
+
+            # second node of Ranvier
+            t0 = t1
+            t1 = t0 + self.nodelength/P0P1
+            xx0 = (1 - t0) * x0 + t0 * x1
+            yy0 = (1 - t0) * y0 + t0 * y1
+            zz0 = (1 - t0) * z0 + t0 * z1
+            xx1 = (1 - t1) * x0 + t1 * x1
+            yy1 = (1 - t1) * y0 + t1 * y1
+            zz1 = (1 - t1) * z0 + t1 * z1
+
+            h.pt3dadd(xx0, yy0, zz0, self.nodeD, sec= self.nodes[i+1])
+            h.pt3dadd(xx1, yy1, zz1, self.nodeD, sec= self.nodes[i+1])
+
+    def _setup_dimensions(self): 
+        for sec in self.nodes:
+            sec.L = self.nodelength
+            sec.diam = self.nodeD
+
+        for sec in self.MYSA:
+            sec.L = self.paralength1
+            sec.diam = self.fiberD
+
+        for sec in self.FLUT:
+            sec.L = self.paralength2
+            sec.diam = self.fiberD
+
+        for sec in self.STIN:
+            sec.L = self.interlength
+            sec.diam = self.fiberD
+
+
+    def _set_nseg(self):
+        for sec in self.all:
+            sec.nseg = 1
+
+    def _setup_subsections(self):
+        self.all = h.SectionList()
+
+        for sec in self.MYSA:
+            self.all.append(sec)
+
+        for sec in self.FLUT:
+            self.all.append(sec)
+        
+        for sec in self.STIN:
+            self.all.append(sec)
+
+        for sec in self.nodes:
+            self.all.append(sec)
+
+    def _insert_channels(self): 
+        # nodes
+        for sec in self.nodes:
+            sec.insert("newaxnode")
+
+        # MYSA
+        for sec in self.MYSA:
+            sec.insert("pas")
+
+        # FLUT
+        for sec in self.FLUT:
+            sec.insert("pas")
+
+        # STIN
+        for sec in self.STIN:
+            sec.insert("pas")
+
+    def _setup_biophysics(self): # biophys
+        # set variables values
+        celsius = 37
+        rhoa = 0.7e6 # ohm-µm
+        mycm = 0.1 # µF/cm2 lamella membrane
+        mygm = 0.001 # S/cm2 lamella membrane
+
+        Rpn0 = (rhoa * 0.01)/(h.PI * ((((self.nodeD/2) + self.space_p1)**2) - ((self.nodeD/2)**2)))
+        Rpn1 = (rhoa * 0.01)/(h.PI * ((((self.paraD1/2) + self.space_p1)**2) - ((self.paraD1/2)**2)))
+        Rpn2 = (rhoa * 0.01)/(h.PI * ((((self.paraD2/2) + self.space_p2)**2)-((self.paraD2/2)**2)))
+        Rpx = (rhoa * 0.01)/(h.PI * ((((self.axonD/2) + self.space_i)**2) - ((self.axonD/2)**2)))
+
+        for sec in self.nodes:
+            sec.Ra = rhoa/10000
+            sec.cm = 2
+            sec.xraxial[1] = Rpn0 
+            sec.xg[1] = 1e10 
+            sec.xc[1] = 0 
+            sec.xraxial[0] = Rpn0 
+            sec.xg[0] = 1e10 
+            sec.xc[0] = 0 
+
+        for sec in self.MYSA:
+            sec.Ra = rhoa * (1/(self.paraD1/self.fiberD)**2)/10000
+            sec.cm = 2 * self.paraD1/self.fiberD
+            sec.g_pas = 0.001 * self.paraD1/self.fiberD
+            sec.e_pas = h.v_init #-80 # v_init
+            sec.xraxial[1] = Rpn1
+            sec.xg[1] = mygm/(self.nl * 2)
+            sec.xc[1] = mycm/(self.nl * 2)
+            sec.xraxial[0] = Rpn1
+            sec.xg[0] = mygm/(self.nl * 2)
+            sec.xc[0] = mycm/(self.nl * 2)
+
+        for sec in self.FLUT:
+            sec.Ra = rhoa * (1/(self.paraD2/self.fiberD)**2)/10000
+            sec.cm = 2 * self.paraD2/self.fiberD
+            sec.g_pas = 0.0001 * self.paraD2/self.fiberD		
+            sec.e_pas = h.v_init #-80
+            sec.xraxial[1] = Rpn2 
+            sec.xg[1] = mygm/(self.nl * 2) 
+            sec.xc[1] = mycm/(self.nl * 2)
+            sec.xraxial[0] = Rpn2 
+            sec.xg[0] = mygm/(self.nl * 2) 
+            sec.xc[0] = mycm/(self.nl * 2)
+
+        for sec in self.STIN:
+            sec.Ra = rhoa * (1/(self.axonD/self.fiberD)**2)/10000
+            sec.cm = 2 * self.axonD/self.fiberD
+            sec.g_pas = 0.0001 * self.axonD/self.fiberD
+            sec.e_pas = h.v_init #-80
+            sec.xraxial[1] = Rpx 
+            sec.xg[1] = mygm/(self.nl * 2) 
+            sec.xc[1] = mycm/(self.nl * 2)
+            sec.xraxial[0] = Rpx 
+            sec.xg[0] = mygm/(self.nl * 2) 
+            sec.xc[0] = mycm/(self.nl * 2)
+
+    def _create_synapses(self):
+        pass
+
+    def _find_node_coordinates(self):
+        """
+            Determine the coordinates of axon nodes for a given trajectory.
+            Node spacing is determined by the fiber diameter
+            
+            Inputs:
+                fiberD = µm, fiber diameter
+                axon_trajectory = n x 3 array containing the line segments describing the axon trajectory in µm
+
+            Outputs:
+                array of x,y,z coordinates of nodes with the proper spacing along the provided trajectory
+            
+        """
+        dx = self.deltax                    # node spacing
+        ii, jj = 0, 0                         # counters for stepping through points of axon trajectories
+        xx, yy, zz = list(), list(), list()     # "interpolated" node locations for NEURON
+        P0 = self.axon_trajectory[ii,:]              # initialize point, P0
+        P1 = self.axon_trajectory[ii+1,:]            # initialize point, P1
+
+        # define initial point of axon, i.e. first node
+        xx.append(P0[0])
+        yy.append(P0[1])
+        zz.append(P0[2]) 
+
+        while True:
+            P = [xx[jj],yy[jj],zz[jj]] # last node
+            PP1 = np.sqrt(sum((P1 - P)**2)) # distance of new segment point to last node
+            if (PP1 >= dx): # check if it's longer than internode distance
+                P0P1 = np.sqrt(sum((P1 - P0)**2)) # distance of before last segment to last segment
+                tt = (P0P1 - PP1 + dx)/P0P1
+                xx.append((1 - tt) * P0[0] + tt * P1[0])
+                yy.append((1 - tt) * P0[1] + tt * P1[1])
+                zz.append((1 - tt) * P0[2] + tt * P1[2])
+                jj += 1
+            else:
+                ii += 1                               # update P0 and P1
+                if (ii == (np.shape(self.axon_trajectory)[0] - 1)):
+                    break
+                P0 = P1
+                P1 = self.axon_trajectory[ii+1,:]
+                # P0P1 = np.sqrt(sum((P1 - P0)**2))
+                # tt = (dx - PP1)/P0P1
+                # xx.append((1 - tt) * P0[0] + tt * P1[0])
+                # yy.append((1 - tt) * P0[1] + tt * P1[1])
+                # zz.append((1 - tt) * P0[2] + tt * P1[2])
+                # jj += 1
+
+        return np.array([xx, yy, zz]).T
+
 
     
 
