@@ -1498,8 +1498,8 @@ class SchafferCollateral(Cell):
         dx = self.deltax                    # node spacing
         ii, jj = 0, 0                         # counters for stepping through points of axon trajectories
         xx, yy, zz = list(), list(), list()     # "interpolated" node locations for NEURON
-        P0 = self.axon_trajectory[ii,:]              # initialize point, P0
-        P1 = self.axon_trajectory[ii+1,:]            # initialize point, P1
+        P0 = self.axon_trajectory[ii,:3]              # initialize point, P0
+        P1 = self.axon_trajectory[ii+1,:3]            # initialize point, P1
 
         # define initial point of axon, i.e. first node
         xx.append(P0[0])
@@ -1521,7 +1521,7 @@ class SchafferCollateral(Cell):
                 if (ii == (np.shape(self.axon_trajectory)[0] - 1)):
                     break
                 P0 = P1
-                P1 = self.axon_trajectory[ii+1,:]
+                P1 = self.axon_trajectory[ii+1,:3]
                 # P0P1 = np.sqrt(sum((P1 - P0)**2))
                 # tt = (dx - PP1)/P0P1
                 # xx.append((1 - tt) * P0[0] + tt * P1[0])
