@@ -28,9 +28,10 @@ class Cell():
         self._setup_biophysics()
 
         # position
-        self.x = self.y = self.z = 0
-        self._set_position(x, y, z)
-        self._rotate_z(theta)
+        if not isinstance(self, SchafferCollateral):
+            self.x = self.y = self.z = 0
+            self._set_position(x, y, z)
+            self._rotate_z(theta)
 
         self.x_intrinsic = x_intrinsic
         self.y_intrinsic = y_intrinsic
