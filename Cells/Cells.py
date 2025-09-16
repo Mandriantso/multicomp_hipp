@@ -622,7 +622,7 @@ class PyramidalCell(Cell):
             syn_.tau2 = 8 * ms
             syn_.e = -75 * mV
             self._syn_list.append(syn_)
-    
+
 
 class BasketCell(Cell):
     name = "BasketCell"
@@ -1180,7 +1180,7 @@ class SchafferCollateral(Cell):
     
     name = "SchafferCollateral"
 
-    def __init__(self, gid: int,
+    def __init__(self, gid: int, gid_last_node: int,
                  axon_trajectory: np.array,
                  x: float=0.,
                  y: float=0.,
@@ -1219,6 +1219,18 @@ class SchafferCollateral(Cell):
         self.axoninter = self.nstins * (self.axonnodes - 1)
         
         super().__init__(gid, x, y, z, theta, x_intrinsic, y_intrinsic, x_flat, y_flat) 
+
+        self._gid_last_node = gid_last_node
+
+        # recording vectors last node
+        self.spike_times_last_node= h.Vector()
+
+        self._spike_detector_last_node = h.NetCon(self.nodes[-1](1)._ref_v, None, sec=self.nodes[-1])
+        self._spike_detector_last_node.threshold = 0
+        self._spike_detector_last_node.record(self.spike_times_last_node)
+
+        self.last_node_v = h.Vector().record(self.nodes[-1](1)._ref_v)
+
 
     def _setup_morphology(self):
         # create sections
