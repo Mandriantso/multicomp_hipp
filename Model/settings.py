@@ -47,6 +47,7 @@ syn_dist_CA1 = [] # default: [500, 470, 1057.695]
 syn_dist_SUB = []
 
 # TODO : synaptic distance between areas
+syn_dist_CA3_CA1 = []
 
 # connection weights per area | [[Pyr-Pyr, Pyr-BC, Pyr-OLM], [BC-Pyr, BC-BC, BC-OLM], [OLM-Pyr, OLM-BC, OLM-OLM]]
                                 # or [[Gran-Gran, Gran-BC, Gran-HIPP], [BC-Gran, BC-BC, BC-HIPP], [HIPP-Gran, HIPP-BC, HIPP-HIPP]] in DG
@@ -64,6 +65,7 @@ syn_exc = [] # default: [0.5, 3., 0]
 syn_inh = [] # default: [1., 8., -75]
 
 # TODO : connection weights inter areas
+w_CA3_CA1 = []
 
 # TODO : inputs 
 
@@ -89,7 +91,7 @@ def init(data):
     global N_EC, N_DG, N_CA3, N_CA1, N_SUB #, N_all
 #     N_EC = [data['areas']['EC']['Pyramidal']['N'], data['areas']['EC']['Basket']['N'], data['areas']['EC']['OLM']['N']]
 #     N_DG = [data['areas']['DG']['Granule']['N'], data['areas']['DG']['Basket']['N'], data['areas']['DG']['HIPP']['N']]
-#     N_CA3 = [data['areas']['CA3']['Pyramidal']['N'], data['areas']['CA3']['Basket']['N'], data['areas']['CA3']['OLM']['N']]
+    N_CA3 = [data['areas']['CA3']['Pyramidal']['N'], data['areas']['CA3']['Basket']['N'], data['areas']['CA3']['OLM']['N']]
     N_CA1 = [data['areas']['CA1']['Pyramidal']['N'], data['areas']['CA1']['Basket']['N'], data['areas']['CA1']['OLM']['N']]
 #     N_SUB = [data['areas']['Sub']['Pyramidal']['N'], data['areas']['Sub']['Basket']['N'], data['areas']['Sub']['OLM']['N']]
 #     N_all = [N_EC, N_DG, N_CA3, N_CA1, N_SUB]
@@ -98,7 +100,7 @@ def init(data):
     global sigma_EC, sigma_DG, sigma_CA3, sigma_CA1, sigma_SUB #, sigma_all
     # sigma_EC = [data['areas']['EC']['Pyramidal']['noise']['sigma'], data['areas']['EC']['Basket']['noise']['sigma'], data['areas']['EC']['OLM']['noise']['sigma']]
     # sigma_DG = [data['areas']['DG']['Granule']['noise']['sigma'], data['areas']['DG']['Basket']['noise']['sigma'], data['areas']['DG']['HIPP']['noise']['sigma']]
-    # sigma_CA3 = [data['areas']['CA3']['Pyramidal']['noise']['sigma'], data['areas']['CA3']['Basket']['noise']['sigma'], data['areas']['CA3']['OLM']['noise']['sigma']]
+    sigma_CA3 = [data['areas']['CA3']['Pyramidal']['noise']['sigma']] #, data['areas']['CA3']['Basket']['noise']['sigma'], data['areas']['CA3']['OLM']['noise']['sigma']]
     sigma_CA1 = [data['areas']['CA1']['Pyramidal']['noise']['sigma'], data['areas']['CA1']['Basket']['noise']['sigma'], data['areas']['CA1']['OLM']['noise']['sigma']]
     # sigma_SUB = [data['areas']['Sub']['Pyramidal']['noise']['sigma'], data['areas']['Sub']['Basket']['noise']['sigma'], data['areas']['Sub']['OLM']['noise']['sigma']]
     # sigma_all = [sigma_EC, sigma_DG, sigma_CA3, sigma_CA1, sigma_SUB]
@@ -106,7 +108,7 @@ def init(data):
     global mean_EC, mean_DG, mean_CA3, mean_CA1, mean_SUB #, mean_all
     # mean_EC = [data['areas']['EC']['Pyramidal']['noise']['mean'], data['areas']['EC']['Basket']['noise']['mean'], data['areas']['EC']['OLM']['noise']['mean']]
     # mean_DG = [data['areas']['DG']['Granule']['noise']['mean'], data['areas']['DG']['Basket']['noise']['mean'], data['areas']['DG']['HIPP']['noise']['mean']]
-    # mean_CA3 = [data['areas']['CA3']['Pyramidal']['noise']['mean'], data['areas']['CA3']['Basket']['noise']['mean'], data['areas']['CA3']['OLM']['noise']['mean']]
+    mean_CA3 = [data['areas']['CA3']['Pyramidal']['noise']['mean']] #, data['areas']['CA3']['Basket']['noise']['mean'], data['areas']['CA3']['OLM']['noise']['mean']]
     mean_CA1 = [data['areas']['CA1']['Pyramidal']['noise']['mean'], data['areas']['CA1']['Basket']['noise']['mean'], data['areas']['CA1']['OLM']['noise']['mean']]
     # mean_SUB = [data['areas']['Sub']['Pyramidal']['noise']['mean'], data['areas']['Sub']['Basket']['noise']['mean'], data['areas']['Sub']['OLM']['noise']['mean']]
     # mean_all = [mean_EC, mean_DG, mean_CA3, mean_CA1, mean_SUB]
@@ -114,7 +116,7 @@ def init(data):
     global tau_EC, tau_DG, tau_CA3, tau_CA1, tau_SUB #, tau_all
     # tau_EC = [data['areas']['EC']['Pyramidal']['noise']['tau'], data['areas']['EC']['Basket']['noise']['tau'], data['areas']['EC']['OLM']['noise']['tau']]
     # tau_DG = [data['areas']['DG']['Granule']['noise']['tau'], data['areas']['DG']['Basket']['noise']['tau'], data['areas']['DG']['HIPP']['noise']['tau']]
-    # tau_CA3 = [data['areas']['CA3']['Pyramidal']['noise']['tau'], data['areas']['CA3']['Basket']['noise']['tau'], data['areas']['CA3']['OLM']['noise']['tau']]
+    tau_CA3 = [data['areas']['CA3']['Pyramidal']['noise']['tau']] #, data['areas']['CA3']['Basket']['noise']['tau'], data['areas']['CA3']['OLM']['noise']['tau']]
     tau_CA1 = [data['areas']['CA1']['Pyramidal']['noise']['tau'], data['areas']['CA1']['Basket']['noise']['tau'], data['areas']['CA1']['OLM']['noise']['tau']]
     # tau_SUB = [data['areas']['Sub']['Pyramidal']['noise']['tau'], data['areas']['Sub']['Basket']['noise']['tau'], data['areas']['Sub']['OLM']['noise']['tau']]
     # tau_all = [tau_EC, tau_DG, tau_CA3, tau_CA1, tau_SUB]
@@ -152,6 +154,14 @@ def init(data):
     #         [data['connectivity']['intra']['Sub']['weight']['Basket']['Pyramidal'], data['connectivity']['intra']['Sub']['weight']['Basket']['Basket'], data['connectivity']['intra']['Sub']['weight']['Basket']['OLM']],
     #         [data['connectivity']['intra']['Sub']['weight']['OLM']['Pyramidal'], data['connectivity']['intra']['Sub']['weight']['OLM']['Basket'], data['connectivity']['intra']['Sub']['weight']['OLM']['OLM']]]
     
+    # Synaptic from CA3 to CA1 area
+    global syn_dist_CA3_CA1
+    syn_dist_CA3_CA1 = [data['connectivity']['inter']['CA3-CA1']['syn_distance']]
+
+    # Connection weights from CA3 to CA1 area
+    global w_CA3_CA1
+    w_CA3_CA1 = [data['connectivity']['inter']['CA3-CA1']['weight']]
+
     # synaptic properties
     global syn_threshold, syn_delay, syn_exc, syn_inh
     syn_threshold = data['synapses']['threshold']

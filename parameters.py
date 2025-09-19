@@ -75,7 +75,7 @@ _data = {
                 "N": 26,
                 "type": "Exc",
                 "noise": {
-                    "sigma": 1.e-2,
+                    "sigma": 1.e-4,
                     "mean": 0,
                     "tau": 25
                 }
@@ -229,7 +229,12 @@ _data = {
                 }
             } # TODO
         },
-        "inter": {} # TODO
+        "inter": {
+            "CA3-CA1":{
+                "syn_distance": 206.11 * 1.5,
+                "weight": 0.0009
+            }
+        } # TODO
     },
     "synapses": {
         "threshold": -20, # (mV)
@@ -246,23 +251,17 @@ _data = {
         }
     },
     "stimulation": {
-        "status": True,
-        "type": "bipolar",    # False -> no stimulation; True -> stimulation is on
-        "target": "CA1",
-        "coordinates": [[
-            265.02,
-            4721.37,
-            0.0          
+        "status": False, # False -> no stimulation; True -> stimulation is on
+        "type": " ",    
+        "target": " ",
+        "coordinates": [[         
         ], [
-            2337.461,
-            5886.57,
-            0.0
         ]  
         ],  
         "rho": 300, # medium resistivity (ohm cm)
-        "duration": 100.0, # (ms)
-        "onset": 2000, # (ms)
-        "I": -1 # (mA) stimulation amplitude
+        "duration": 0.0, # (ms)
+        "onset": 0, # (ms)
+        "I": 0 # (mA) stimulation amplitude
     },
     "simulation": {
         "duration": 5000.0, # (ms)
@@ -369,7 +368,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='parameters_bipolar_stim_CA1_par',
+                        default='parameters_no_stim',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
