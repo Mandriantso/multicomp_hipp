@@ -1437,6 +1437,7 @@ class SchafferCollateral(Cell):
     def _setup_biophysics(self): # biophys
         # set variables values
         celsius = 37
+        Vrest = -80
         rhoa = 0.7e6 # ohm-µm
         mycm = 0.1 # µF/cm2 lamella membrane
         mygm = 0.001 # S/cm2 lamella membrane
@@ -1460,7 +1461,7 @@ class SchafferCollateral(Cell):
             sec.Ra = rhoa * (1/(self.paraD1/self.fiberD)**2)/10000
             sec.cm = 2 * self.paraD1/self.fiberD
             sec.g_pas = 0.001 * self.paraD1/self.fiberD
-            sec.e_pas = h.v_init #-80 # v_init
+            sec.e_pas = Vrest #h.v_init #-80 # v_init
             sec.xraxial[1] = Rpn1
             sec.xg[1] = mygm/(self.nl * 2)
             sec.xc[1] = mycm/(self.nl * 2)
@@ -1472,7 +1473,7 @@ class SchafferCollateral(Cell):
             sec.Ra = rhoa * (1/(self.paraD2/self.fiberD)**2)/10000
             sec.cm = 2 * self.paraD2/self.fiberD
             sec.g_pas = 0.0001 * self.paraD2/self.fiberD		
-            sec.e_pas = h.v_init #-80
+            sec.e_pas = Vrest #h.v_init #-80
             sec.xraxial[1] = Rpn2 
             sec.xg[1] = mygm/(self.nl * 2) 
             sec.xc[1] = mycm/(self.nl * 2)
@@ -1484,7 +1485,7 @@ class SchafferCollateral(Cell):
             sec.Ra = rhoa * (1/(self.axonD/self.fiberD)**2)/10000
             sec.cm = 2 * self.axonD/self.fiberD
             sec.g_pas = 0.0001 * self.axonD/self.fiberD
-            sec.e_pas = h.v_init #-80
+            sec.e_pas = Vrest #h.v_init #-80
             sec.xraxial[1] = Rpx 
             sec.xg[1] = mygm/(self.nl * 2) 
             sec.xc[1] = mycm/(self.nl * 2)
