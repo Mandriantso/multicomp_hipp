@@ -3,6 +3,7 @@ from neuron.units import ms, mV
 import numpy as np
 
 h.nrn_load_dll('Mods/nrnmech.dll')
+# h.nrn_load_dll('Mods_input_noise/nrnmech.dll')
 h.load_file("stdgui.hoc")
 
 class Cell():
@@ -1225,11 +1226,12 @@ class SchafferCollateral(Cell):
         # recording vectors last node
         self.spike_times_last_node= h.Vector()
 
-        self._spike_detector_last_node = h.NetCon(self.nodes[-1](1)._ref_v, None, sec=self.nodes[-1])
+        self._spike_detector_last_node = h.NetCon(self.nodes[-1](0.5)._ref_v, None, sec=self.nodes[-1])
         self._spike_detector_last_node.threshold = 0
         self._spike_detector_last_node.record(self.spike_times_last_node)
 
-        self.last_node_v = h.Vector().record(self.nodes[-1](1)._ref_v)
+        self.last_node_v = h.Vector().record(self.nodes[-1](0.5)._ref_v)
+        self.last_node_i = h.Vector().record(self.nodes[-1](0.5)._ref_i_membrane)
 
 
     def _setup_morphology(self):
