@@ -62,7 +62,7 @@ parser.add_argument('-sd', '--save_dir',
                     nargs='?',
                     metavar='-sd',
                     type=str,
-                    default='new_param_search_paper/SCA_weights',
+                    default='new_param_search_paper_good_OLM/SCA_weights',
                     help='Destination directory to save the results')
 
 args = parser.parse_args()
