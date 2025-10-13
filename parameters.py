@@ -207,15 +207,15 @@ _data = {
                     "Pyramidal": { # from -> to
                         "Pyramidal": 0.0,
                         "Basket": 0.009, # after grid search
-                        "OLM": 0.0009
+                        "OLM": 0.0018
                     },
                     "Basket": {
-                        "Pyramidal": 0.054, # after grid search
+                        "Pyramidal": 0.036, # after grid search
                         "Basket": 0.0018,
                         "OLM": 0.0
                     },
                     "OLM": {
-                        "Pyramidal": 0.0,
+                        "Pyramidal": 0.036,
                         "Basket": 0.0,
                         "OLM": 0.0
                     }
