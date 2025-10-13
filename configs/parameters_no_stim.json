@@ -196,15 +196,15 @@
                     "Pyramidal": {
                         "Pyramidal": 0.0,
                         "Basket": 0.009,
-                        "OLM": 0.0009
+                        "OLM": 0.0018
                     },
                     "Basket": {
-                        "Pyramidal": 0.054,
+                        "Pyramidal": 0.036,
                         "Basket": 0.0018,
                         "OLM": 0.0
                     },
                     "OLM": {
-                        "Pyramidal": 0.0,
+                        "Pyramidal": 0.036,
                         "Basket": 0.0,
                         "OLM": 0.0
                     }
@@ -272,8 +272,8 @@
             "vmax": 1.0
         }
     },
-    "git_short_hash": "bf9e1c9",
-    "timestamp": "Fri Sep 19 15:57:20 2025",
+    "git_short_hash": "23790f2",
+    "timestamp": "Mon Oct 13 15:03:36 2025",
     "git_branch": "main",
-    "git_hash": "bf9e1c9edf0207d60f781f4afbfc6869f273258b"
+    "git_hash": "23790f2814d34564087b4051ca9034ecb08c5fb3"
 }
