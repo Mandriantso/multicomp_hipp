@@ -25,7 +25,7 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
                  **git_kwargs):
     
     # create figure
-    fig, ax = plt.subplots(1, 1, figsize=(6,9))
+    fig, ax = plt.subplots(1, 1, figsize=(12,7))
 
     # make raster plot
     # check if several spike_monitors or just one
@@ -51,10 +51,10 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
     ax.spines['left'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
+    # ax.spines['bottom'].set_visible(False)
     ax.axes.get_yaxis().set_visible(False)
-    ax.axes.get_xaxis().set_visible(False)
-    add_sizebar(ax, [5000-250, 5000], [-1, -1], 'black', '250 ms')
+    # ax.axes.get_xaxis().set_visible(False)
+    add_sizebar(ax, [x_lim[1]-250, x_lim[1]], [-1, -1], 'black', '250 ms')
 
     # set legend
     custom_lines = []
@@ -65,7 +65,8 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
     handles, labels = ax.get_legend_handles_labels()
     handles.extend(custom_lines)
     ax.legend(handles=handles, ncol=3, loc='lower center', bbox_to_anchor=(0, 1.02, 1, 0.2), prop={'size':9})
-    plot_watermark(fig, git_kwargs)
+    if git_kwargs:
+        plot_watermark(fig, **git_kwargs)
     plt.show()
 
 
@@ -105,7 +106,7 @@ def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
     ax.spines['bottom'].set_visible(False)
     ax.axes.get_yaxis().set_visible(False)
     ax.axes.get_xaxis().set_visible(False)
-    add_sizebar(ax, [5000-250, 5000], [-1, -1], 'black', '250 ms')
+    add_sizebar(ax, [x_lim[1]-250, x_lim[1]], [-1, -1], 'black', '250 ms')
 
     # set legend
     custom_lines = []
@@ -117,7 +118,8 @@ def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
     handles.extend(custom_lines)
     # ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
     ax.legend(handles=handles, ncol=3, loc='lower center', bbox_to_anchor=(0, 1.02, 1, 0.2), prop={'size':9})
-    plot_watermark(fig, git_kwargs)
+    if git_kwargs:
+        plot_watermark(fig, **git_kwargs)
     plt.savefig(name_fig, bbox_inches="tight", pad_inches = 0)
     plt.clf()
     plt.close()
@@ -146,7 +148,8 @@ def plot_FR(t: list, rates: list, colors: list, cell_types: list[str], **git_kwa
     handles, labels = ax.get_legend_handles_labels()
     handles.extend(custom_lines)
     ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
-    plot_watermark(fig, git_kwargs)
+    if git_kwargs:
+        plot_watermark(fig, **git_kwargs)
     plt.show()
 
 
@@ -174,7 +177,8 @@ def save_FR(name_fig: str, t: list, rates: list, colors: list, cell_types: list[
     handles, labels = ax.get_legend_handles_labels()
     handles.extend(custom_lines)
     ax.legend(handles=handles, ncol=1, loc='lower center', bbox_to_anchor=(1.2, 0.87), prop={'size':9})
-    plot_watermark(fig, git_kwargs)
+    if git_kwargs:
+        plot_watermark(fig, **git_kwargs)
     plt.savefig(name_fig, bbox_inches="tight", pad_inches = 0)
     plt.clf()
     plt.close()
@@ -208,7 +212,8 @@ def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], xlim: list
     cbar1.set_label("Power (arbitrary unit)")
     cbar2.set_label("Power (arbitrary unit)")
     cbar3.set_label("Power (arbitrary unit)")
-    plot_watermark(fig, git_kwargs)
+    if git_kwargs:
+        plot_watermark(fig, **git_kwargs)
     plt.show()
 
 
@@ -239,7 +244,8 @@ def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[s
     cbar1.set_label("Power (arbitrary unit)")
     cbar2.set_label("Power (arbitrary unit)")
     cbar3.set_label("Power (arbitrary unit)")
-    plot_watermark(fig, git_kwargs)
+    if git_kwargs:
+        plot_watermark(fig, **git_kwargs)
     plt.savefig(name_fig, bbox_inches="tight", pad_inches = 0)
     plt.clf()
     plt.close()
