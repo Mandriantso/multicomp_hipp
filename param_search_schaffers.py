@@ -160,7 +160,8 @@ gids_bc = [gid for gid in gids_interneurons if gid < 2*n_pyr_ca1 + n_bc_ca1]
 
 gids_olm = [gid for gid in gids_interneurons if gid >= 2*n_pyr_ca1 + n_bc_ca1]
 
-gids_schaffers = list(range(pc.id() + n_cells_ca1+n_pyr_ca1, n_cells_ca1+n_pyr_ca1+n_schaffer_ca3, pc.nhost()))
+gids_sca_first_node = [n_cells_ca1+n_pyr_ca1+2*n for n in range(pc.id(), n_schaffer_ca3, pc.nhost())]
+gids_sca_last_node = [n_cells_ca1+n_pyr_ca1+2*n + 1 for n in range(pc.id(), n_schaffer_ca3, pc.nhost())]
 
 # associate gid to processor
 for gid in gids_pyr_soma:
@@ -172,7 +173,10 @@ for gid in gids_pyr_axon:
 for gid in gids_interneurons:
     pc.set_gid2node(gid, pc.id())
 
-for gid in gids_schaffers:
+for gid in gids_sca_first_node:
+    pc.set_gid2node(gid, pc.id())
+
+for gid in gids_sca_last_node:
     pc.set_gid2node(gid, pc.id())
 
 if rank == 0:  
@@ -217,14 +221,15 @@ for gid in gids_olm:
 ca1_cells = ca1_pyr_cells + ca1_bc_cells + ca1_olm_cells
 
 ca3_schaffer_collaterals = []
-for gid in gids_schaffers:
-    cell_ = SchafferCollateral(gid=gid, axon_trajectory=ca3_schaffer_trajectories[gid-n_cells_ca1-n_pyr_ca1],
+for gid_first_node, gid_last_node in zip(gids_sca_first_node, gids_sca_last_node):
+    cell_ = SchafferCollateral(gid=gid_first_node, gid_last_node=gid_last_node, axon_trajectory=ca3_schaffer_trajectories[gid-n_cells_ca1-n_pyr_ca1],
                                x=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 0], y=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 1],
                                x_intrinsic=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 3], y_intrinsic=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 4],
                                x_flat=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 5], y_flat=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 6])
     ca3_schaffer_collaterals.append(cell_)
     # associate gid to spike_detector
-    pc.cell(gid, cell_._spike_detector)
+    pc.cell(gid_first_node, cell_._spike_detector)
+    pc.cell(gid_last_node, cell_._spike_detector_last_node)
 
 all_cells = ca1_cells + ca3_schaffer_collaterals
 
@@ -359,10 +364,10 @@ for i in range(n_pyr_ca1 + n_bc_ca1, n_cells_ca1):
 # Schaffer -> PYR connections
 for i in range(n_cells_ca1, n_cells_ca1+n_schaffer_ca3):
     for j in range(n_pyr_ca1):
-        if conn_mat[i, j] > 0 and pc.gid_exists(i): # add pyr to schaffers postsynaptic list
-            pc.gid2cell(i)._postsyn_list.append(2*j)
-        if conn_mat[i,j] > 0 and pc.gid_exists(2*j): # add schaffer to pyr postsynaptic list
-            pc.gid2cell(2*j)._presyn_list.append(i)
+        if conn_mat[i, j] > 0 and pc.gid_exists(2*i+1+n_pyr_ca1): # add pyr to schaffers postsynaptic list
+            pc.gid2cell(2*i+1+n_pyr_ca1)._postsyn_list.append(2*j)
+        if conn_mat[i,j] > 0 and pc.gid_exists(2*j): # add last node of schaffer to pyr presynaptic list
+            pc.gid2cell(2*j)._presyn_list.append(2*i+1+n_pyr_ca1)
 
 if rank == 0:
     print('[+] Found all postsynatpic cells')
