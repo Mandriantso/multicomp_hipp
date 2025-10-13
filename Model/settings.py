@@ -5,6 +5,7 @@ sim_dt = 0.025 # (ms) time step
 sim_v_init = -65 # (mV)
 sim_seed = 42
 rho = 300 # medium resistivity (ohm cm)
+sim_celsius = 35
 
 # population sizes per area | [Pyr, BC, OLM] or [Gran, BC, HIPP] in DG
 N_EC = [] # default: [50, 6, 2]
@@ -170,12 +171,13 @@ def init(data):
     syn_inh = [data['synapses']['GABA-A']['tau1'], data['synapses']['GABA-A']['tau2'], data['synapses']['GABA-A']['e']]
 
     # simulation parameters
-    global duration, sim_dt, sim_v_init, sim_seed, rho
+    global duration, sim_dt, sim_v_init, sim_seed, rho, sim_celsius
     duration = data['simulation']['duration']
     sim_dt = data['simulation']['dt']
     sim_v_init = data['simulation']['v_init']
     sim_seed = data['seed_val']
     rho = data['stimulation']['rho']
+    sim_celsius = data['simulation']['celsius']
 
     # extracellular stimulation parameters
     global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, stim_type, ATTACHED__
@@ -184,7 +186,7 @@ def init(data):
     stim_amp = data['stimulation']['I']
     stim_onset = data['stimulation']['onset']
     stim_pos = data['stimulation']['coordinates']
-    stim_type = data['stimulation']['type']
+    # stim_type = data['stimulation']['type']
     ATTACHED__ = 0
 
     # git stuff
