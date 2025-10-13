@@ -390,7 +390,7 @@ for k in K_factors: # for SCA -> PYR weights
         sys.stdout.flush()
 
     dirs['save_dir'] = os.path.join(dirs['results'], "w_ScaE_{}".format(k))
-    if not os.path.isdir(dirs['dir_E']) and rank == 0:
+    if not os.path.isdir(dirs['save_dir']) and rank == 0:
         print('[+] Creating directory', dirs['save_dir'])
         sys.stdout.flush()
         os.makedirs(dirs['save_dir'])
