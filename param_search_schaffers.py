@@ -222,10 +222,10 @@ ca1_cells = ca1_pyr_cells + ca1_bc_cells + ca1_olm_cells
 
 ca3_schaffer_collaterals = []
 for gid_first_node, gid_last_node in zip(gids_sca_first_node, gids_sca_last_node):
-    cell_ = SchafferCollateral(gid=gid_first_node, gid_last_node=gid_last_node, axon_trajectory=ca3_schaffer_trajectories[gid-n_cells_ca1-n_pyr_ca1],
-                               x=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 0], y=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 1],
-                               x_intrinsic=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 3], y_intrinsic=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 4],
-                               x_flat=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 5], y_flat=ca3_schaffer_coords[gid-n_cells_ca1-n_pyr_ca1, 6])
+    cell_ = SchafferCollateral(gid=gid_first_node, gid_last_node=gid_last_node, axon_trajectory=ca3_schaffer_trajectories[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
+                               x=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 0], y=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 1],
+                               x_intrinsic=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 3], y_intrinsic=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 4],
+                               x_flat=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 5], y_flat=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 6])
     ca3_schaffer_collaterals.append(cell_)
     # associate gid to spike_detector
     pc.cell(gid_first_node, cell_._spike_detector)
