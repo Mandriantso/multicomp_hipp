@@ -383,27 +383,26 @@ if rank == 0:
 
 amp = 0.02
 
+dirs['amp_dir'] = os.path.join(dirs['results'], "{}nA".format(amp))
+if not os.path.isdir(dirs['amp_dir']) and rank == 0:
+    print('[+] Creating directory', dirs['amp_dir'])
+    sys.stdout.flush()
+    os.makedirs(dirs['amp_dir'])
+
 for k in K_factors: # for SCA -> PYR weights
     if rank == 0:
         print(f'\n[+]    k = {k}')
         print('-'*32)
         sys.stdout.flush()
 
-    dirs['save_dir'] = os.path.join(dirs['results'], "w_ScaE_{}".format(k))
+    dirs['save_dir'] = os.path.join(dirs['amp_dir'], "w_ScaE_{}".format(k))
     if not os.path.isdir(dirs['save_dir']) and rank == 0:
         print('[+] Creating directory', dirs['save_dir'])
         sys.stdout.flush()
         os.makedirs(dirs['save_dir'])
 
 
-    dirs['amp_dir'] = os.path.join(dirs['save_dir'], "{}nA".format(amp))
-    if not os.path.isdir(dirs['amp_dir']) and rank == 0:
-        print('[+] Creating directory', dirs['amp_dir'])
-        sys.stdout.flush()
-        os.makedirs(dirs['amp_dir'])
-
-
-    dirs['data'] = os.path.join(dirs['amp_dir'], 'data')
+    dirs['data'] = os.path.join(dirs['save_dir'], 'data')
     if not os.path.isdir(dirs['data']) and rank == 0:
         print('[+] Creating directory', dirs['data'])
         sys.stdout.flush()
@@ -474,7 +473,7 @@ for k in K_factors: # for SCA -> PYR weights
                 mt_.select("Exp2Syn")
                 pp = mt_.pp_begin(sec=target_sec)
                 nc_ = pc.gid_connect(pregid, pp)
-                nc_.weight[0] = settings.w_CA3_CA1[0]
+                nc_.weight[0] = settings.w_CA3_CA1[0] * k
                 nc_.threshold = settings.syn_threshold
                 nc_.delay = settings.syn_delay
                 cell_._ncs.append(nc_)
