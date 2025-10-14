@@ -232,7 +232,7 @@ _data = {
         "inter": {
             "CA3-CA1":{
                 "syn_distance": 206.11 * 1.5,
-                "weight": 0.0009
+                "weight": 0.009
             }
         } # TODO
     },
