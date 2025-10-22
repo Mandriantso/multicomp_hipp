@@ -186,20 +186,28 @@ def save_FR(name_fig: str, t: list, rates: list, colors: list, cell_types: list[
 
 def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], xlim: list=None, ylim: list=None, **git_kwargs): 
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 9), sharex=True, sharey=True)
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(6, 9), sharex=True, sharey=True)
     vmax = max(max(sxx[0].max(), sxx[1].max()), sxx[2].max())
-    im_pyr = ax1.pcolormesh(t[0], f[0], sxx[0]/vmax, shading='auto', cmap='inferno')
-    im_bc = ax2.pcolormesh(t[1], f[1], sxx[1]/vmax, shading='auto', cmap='inferno')
-    im_olm = ax3.pcolormesh(t[2], f[2], sxx[2]/vmax, shading='auto', cmap='inferno')
+    im_pyr = ax1.pcolormesh(t[0], f[0], sxx[0]/sxx[0].max(), shading='auto', cmap='inferno')
+    im_bc = ax2.pcolormesh(t[1], f[1], sxx[1]/sxx[1].max(), shading='auto', cmap='inferno')
+    im_olm = ax3.pcolormesh(t[2], f[2], sxx[2]/sxx[2].max(), shading='auto', cmap='inferno')
+    im_sca = ax4.pcolormesh(t[3], f[3], sxx[3]/sxx[3].max(), shading='auto', cmap='inferno')
 
     ax1.text(0.02, 0.9, cell_types[0], transform=ax1.transAxes, color='white', verticalalignment='top')
     ax2.text(0.02, 0.9, cell_types[1], transform=ax2.transAxes, color='white', verticalalignment='top')
     ax3.text(0.02, 0.9, cell_types[2], transform=ax3.transAxes, color='white', verticalalignment='top')
+    ax4.text(0.02, 0.9, cell_types[3], transform=ax4.transAxes, color='white', verticalalignment='top')
 
-    ax3.set_xlabel('Time (s)')
+    ax1.axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+    ax2.axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+    ax3.axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+    ax4.axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+
+    ax4.set_xlabel('Time (s)')
     ax1.set_ylabel('Frequency (Hz)')
     ax2.set_ylabel('Frequency (Hz)')
     ax3.set_ylabel('Frequency (Hz)')
+    ax4.set_ylabel('Frequency (Hz)')
     if xlim:
         ax3.set_xlim(xlim)
     if ylim:
@@ -209,41 +217,55 @@ def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], xlim: list
     cbar1 = fig.colorbar(im_pyr, ax=ax1)
     cbar2 = fig.colorbar(im_bc, ax=ax2)
     cbar3 = fig.colorbar(im_olm, ax=ax3)
-    cbar1.set_label("Power (arbitrary unit)")
-    cbar2.set_label("Power (arbitrary unit)")
-    cbar3.set_label("Power (arbitrary unit)")
+    cbar4 = fig.colorbar(im_sca, ax=ax4)
+    cbar1.set_label("Power")
+    cbar2.set_label("Power")
+    cbar3.set_label("Power")
+    cbar4.set_label("Power")
     if git_kwargs:
         plot_watermark(fig, **git_kwargs)
     plt.show()
 
 
-def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[str], ylim: list=None, **git_kwargs): 
+def save_specgram(name_fig: str, t: list, f: list, sxx: list, cell_types: list[str], xlim: list=None, ylim: list=None, **git_kwargs): 
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(6, 9), sharex=True, sharey=True)
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(6, 9), sharex=True, sharey=True)
     vmax = max(max(sxx[0].max(), sxx[1].max()), sxx[2].max())
-    im_pyr = ax1.pcolormesh(t[0], f[0], sxx[0]/vmax, shading='auto', cmap='inferno')
-    im_bc = ax2.pcolormesh(t[1], f[1], sxx[1]/vmax, shading='auto', cmap='inferno')
-    im_olm = ax3.pcolormesh(t[2], f[2], sxx[2]/vmax, shading='auto', cmap='inferno')
+    im_pyr = ax1.pcolormesh(t[0], f[0], sxx[0]/sxx[0].max(), shading='auto', cmap='inferno')
+    im_bc = ax2.pcolormesh(t[1], f[1], sxx[1]/sxx[1].max(), shading='auto', cmap='inferno')
+    im_olm = ax3.pcolormesh(t[2], f[2], sxx[2]/sxx[2].max(), shading='auto', cmap='inferno')
+    im_sca = ax4.pcolormesh(t[3], f[3], sxx[3]/sxx[3].max(), shading='auto', cmap='inferno')
 
     ax1.text(0.02, 0.9, cell_types[0], transform=ax1.transAxes, color='white', verticalalignment='top')
     ax2.text(0.02, 0.9, cell_types[1], transform=ax2.transAxes, color='white', verticalalignment='top')
     ax3.text(0.02, 0.9, cell_types[2], transform=ax3.transAxes, color='white', verticalalignment='top')
+    ax4.text(0.02, 0.9, cell_types[3], transform=ax4.transAxes, color='white', verticalalignment='top')
 
-    ax3.set_xlabel('Time (s)')
+    ax1.axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+    ax2.axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+    ax3.axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+    ax4.axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+
+    ax4.set_xlabel('Time (s)')
     ax1.set_ylabel('Frequency (Hz)')
     ax2.set_ylabel('Frequency (Hz)')
     ax3.set_ylabel('Frequency (Hz)')
+    ax4.set_ylabel('Frequency (Hz)')
+    if xlim:
+        ax4.set_xlim(xlim)
     if ylim:
-        ax3.set_ylim(ylim)
+        ax4.set_ylim(ylim)
     else:
-        ax3.set_ylim([0,200])
+        ax4.set_ylim([0,200])
 
     cbar1 = fig.colorbar(im_pyr, ax=ax1)
     cbar2 = fig.colorbar(im_bc, ax=ax2)
     cbar3 = fig.colorbar(im_olm, ax=ax3)
+    cbar4 = fig.colorbar(im_sca, ax=ax4)
     cbar1.set_label("Power (arbitrary unit)")
     cbar2.set_label("Power (arbitrary unit)")
     cbar3.set_label("Power (arbitrary unit)")
+    cbar4.set_label("Power")
     if git_kwargs:
         plot_watermark(fig, **git_kwargs)
     plt.savefig(name_fig, bbox_inches="tight", pad_inches = 0)
