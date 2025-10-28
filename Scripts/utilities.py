@@ -1,7 +1,41 @@
+import os
+import subprocess
+
 import numpy as np
 from scipy import signal as sig
-
 from collections import OrderedDict
+
+
+def is_git_repo():
+    """ Return whether current directory is a git directory """
+    if subprocess.call(["git", "branch"],
+            stderr=subprocess.STDOUT, stdout=open(os.devnull, 'w')) != 0:
+        return False
+    return True
+
+def get_git_revision_hash():
+    """ Get current git hash """
+    if is_git_repo():
+        answer = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'])
+        return answer.decode("utf8").strip("\n")
+    return "None"
+
+def get_git_revision_short_hash():
+    """ Get current git short hash """
+    if is_git_repo():
+        answer = subprocess.check_output(
+            ['git', 'rev-parse', '--short', 'HEAD'])
+        return answer.decode("utf8").strip("\n")
+    return "None"
+
+def get_git_revision_branch():
+    """ Get current git branch """
+    if is_git_repo():
+        answer = subprocess.check_output(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+        return answer.decode("utf8").strip("\n")
+    return "None"
 
 
 def save_membrane_potential(name_file: str, t_vec: np.ndarray, cells_potential: dict):
@@ -52,6 +86,8 @@ def compute_FR(spikes: np.ndarray,
     FR_gaussian: numpy.ndarray
         Population firing rate (Hz) after gaussian convolution
 
+    fs: sampling frequency
+
         
     """
 
@@ -65,7 +101,7 @@ def compute_FR(spikes: np.ndarray,
     else:
         # Calculate new sampling times
         win_step = window_size * round(1. - overlap, 4)
-        # fs_n = int(1/win_step)
+        fs_n = int(1/win_step)
 
         # First center is at the middle of the first window
         c0 = window_size/2
@@ -84,7 +120,7 @@ def compute_FR(spikes: np.ndarray,
             counts.append(spike_cnt)
 
         # return centers, spike counts per window and population firing rate
-        return centers, np.array(counts), np.array(counts)/(window_size)/N_cells, int(1/win_step)
+        return centers, np.array(counts), np.array(counts)/(window_size)/N_cells, fs_n
     
 
 def my_specgram(signal: np.ndarray,

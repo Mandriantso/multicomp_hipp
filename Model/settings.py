@@ -194,5 +194,5 @@ def init(data):
     timestamp = data['timestamp']
     git_branch = data['git_branch']
     git_hash = data['git_hash']
-    git_short_hash = data['git_hash']
+    git_short_hash = data['git_short_hash']
 

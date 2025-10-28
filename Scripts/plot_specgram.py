@@ -37,6 +37,12 @@ if __name__ == "__main__":
 
     data_dir = os.path.join(parent_dir, results_dir, data_dir_name, "data")
 
+    # for watermaks on figures -> reproducibility
+    git_kwargs = {'timestamp': time.ctime(),
+                'branch': get_git_revision_branch(), 
+                'hash': get_git_revision_hash(),
+                'script_name': os.path.basename(__file__)}
+
     # conn_mat = np.load(os.path.join(data_dir, "connection_matrix.npy"))
     # print(conn_mat)
 
@@ -139,8 +145,8 @@ if __name__ == "__main__":
     # cmesh = ax.pcolormesh(tv_pyr, fv_pyr, pspec_pyr, cmap='inferno', shading='auto', rasterized=True)
     # cmesh_list.append(cmesh)
 
-    plot_specgram([tv_pyr, tv_bc, tv_olm, tv_sca], [fv_pyr, fv_bc, fv_olm, fv_sca], [pspec_pyr, pspec_bc, pspec_olm, pspec_sca], ["pyramidal cells", "basket cells", "olm cells", "schaffer collaterals"], ylim=[0,125], xlim=[3,4])
-    # save_specgram(os.path.join(parent_dir, results_dir, data_dir_name, "figures", "specgram_1s.png"), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0,100], xlim=[3,4])
+    # plot_specgram([tv_pyr, tv_bc, tv_olm, tv_sca], [fv_pyr, fv_bc, fv_olm, fv_sca], [pspec_pyr, pspec_bc, pspec_olm, pspec_sca], ["pyramidal cells", "basket cells", "olm cells", "schaffer collaterals"], ylim=[0,125], xlim=[3,4])
+    save_specgram(os.path.join(parent_dir, results_dir, data_dir_name, "figures", "test_specgram_1s_with_schaffer.png"), [tv_pyr, tv_bc, tv_olm, tv_sca], [fv_pyr, fv_bc, fv_olm, fv_sca], [pspec_pyr, pspec_bc, pspec_olm, pspec_sca], ["pyramidal cells", "basket cells", "olm cells", "schaffer_collaterals"], ylim=[0,100], xlim=[3,4], **git_kwargs)
     for cmsh in make_flat(cmesh_list):
         cmsh.set_clim(min(vlow), max(vhigh))
 

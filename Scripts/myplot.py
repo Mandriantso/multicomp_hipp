@@ -13,11 +13,10 @@ def add_sizebar(ax, xlocs, ylocs, bcolor, text): # TODO:  add vertical and horiz
 def plot_watermark(fig, **git_kwargs):
     """ Add simulation infomation on the figure """
 
-    plt.text(.995, .99, '{0}\n {1} ({2}, {3})\n using "{4}"'.format(
-        git_kwargs['timestamp'], git_kwargs['script_name'], git_kwargs['branch'], git_kwargs['short_hash'], git_kwargs['config_file']),
+    for i, (key, value) in enumerate(git_kwargs.items()):
+        plt.text(.9, .99 - 0.01 * i, f'{key} : {value}\n',
              transform=fig.transFigure, ha="right", va="top", clip_on=False,
              color = "black", family="Roboto Mono", weight="400", size="xx-small")
-    
 
 def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
                  colors: list, cell_types: list[str], x_lim: list[float] = None, y_lim: list[float] = None,
@@ -210,7 +209,7 @@ def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], xlim: list
         axs[-1].set_ylim(ylim)
     else:
         axs[-1].set_ylim([0, 200])
-        
+
     if git_kwargs:
         plot_watermark(fig, **git_kwargs)
     plt.show()
