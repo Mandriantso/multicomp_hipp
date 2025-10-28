@@ -84,8 +84,8 @@ settings.init(data)
 
 # for watermaks on figures -> reproducibility
 git_kwargs = {'timestamp': time.ctime(),
-              'branch': settings.git_branch, 
-              'short_hash': settings.git_short_hash,
+              'branch': get_git_revision_branch(), 
+              'hash': get_git_revision_hash(),
               'script_name': os.path.basename(__file__),
               'config_file': filename}
 
@@ -99,7 +99,7 @@ rank = pc.id()
 # factor by which to multiply E -> I and I -> E weights
 # K_factors = [0.1, 0.25, 0.33, 0.5, 0.6, 0.75] 
 # K_factors = [2.25, 2.33, 2.5, 2.6, 2.75, 3.] 
-K_factors = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.] 
+K_factors = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0] 
 # k_x = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.]
 
 if rank == 0:
@@ -362,12 +362,12 @@ for i in range(n_pyr_ca1 + n_bc_ca1, n_cells_ca1):
             pc.gid2cell(2*j)._presyn_list.append(n_pyr_ca1 + i)
 
 # Schaffer -> PYR connections
-for i in range(n_cells_ca1, n_cells_ca1+n_schaffer_ca3):
+for i in range(n_schaffer_ca3):
     for j in range(n_pyr_ca1):
-        if conn_mat[i, j] > 0 and pc.gid_exists(2*i+1+n_pyr_ca1): # add pyr to schaffers postsynaptic list
-            pc.gid2cell(2*i+1+n_pyr_ca1)._postsyn_list.append(2*j)
-        if conn_mat[i,j] > 0 and pc.gid_exists(2*j): # add last node of schaffer to pyr presynaptic list
-            pc.gid2cell(2*j)._presyn_list.append(2*i+1+n_pyr_ca1)
+        if conn_mat[n_cells_ca1 + i, j] > 0 and pc.gid_exists(n_cells_ca1 + n_pyr_ca1 + 2*i + 1): # connect to last node of schaffer collaterals
+            pc.gid2cell(n_cells_ca1 + n_pyr_ca1 + 2*i + 1)._postsyn_list.append(2*j)
+        if conn_mat[n_cells_ca1 + i, j] > 0 and pc.gid_exists(2*j):
+            pc.gid2cell(2*j)._presyn_list.append(n_cells_ca1 + n_pyr_ca1 + 2*i + 1)
 
 if rank == 0:
     print('[+] Found all postsynatpic cells')
@@ -381,9 +381,9 @@ if rank == 0:
     print('-'*32)
     sys.stdout.flush()
 
-amp = 0.02
+# amp = 0.02
 
-dirs['amp_dir'] = os.path.join(dirs['results'], "{}nA".format(amp))
+dirs['amp_dir'] = os.path.join(dirs['results'], "ramp")# "{}nA".format(amp))
 if not os.path.isdir(dirs['amp_dir']) and rank == 0:
     print('[+] Creating directory', dirs['amp_dir'])
     sys.stdout.flush()
@@ -414,7 +414,7 @@ for k in K_factors: # for SCA -> PYR weights
         sys.stdout.flush()
         os.makedirs(dirs['coords'])
 
-    dirs['figures'] = os.path.join(dirs['amp_dir'], 'figures')
+    dirs['figures'] = os.path.join(dirs['save_dir'], 'figures')
     if not os.path.isdir(dirs['figures']) and rank == 0:
         print('[+] Creating directory', dirs['figures'])
         sys.stdout.flush()
@@ -528,28 +528,27 @@ for k in K_factors: # for SCA -> PYR weights
 
     # osc_amp = h.Vector()
     # setting oscillatory input current
-    for cell_ in ca3_schaffer_collaterals:
-        r_osc = 0 # random.uniform(0, 100)
-        target_sec = cell_.soma
-        input_ = oscInput(cell_, target_sec(0.5), 500+r_osc, settings.duration, 6, amp, noisy=False)
-        cell_._inputs_vector.record(input_._ref_i)
+    # for cell_ in ca3_schaffer_collaterals:
+    #     r_osc = 0 # random.uniform(0, 100)
+    #     target_sec = cell_.soma
+    #     input_ = oscInput(cell_, target_sec(0.5), 500+r_osc, settings.duration, 6, amp, noisy=False)
+    #     cell_._inputs_vector.record(input_._ref_i)
     # osc_amp.record(input_._ref_i)
 
     # setting current vectors
-    # VecT = h.Vector([0, settings.duration])
-    # VecStim = h.Vector([0., 1.])
-    # stim_amp = h.Vector()
+    VecT = h.Vector([0, settings.duration])
+    VecStim = h.Vector([0., 1.])
+    stim_amp = h.Vector()
 
-    # for cell_ in ca1_cells:
-    #     if 'PyramidalCell' in str(cell_):
-    #         stim_ = h.IClamp(cell_.soma(0.5))
-    #         stim_.delay = 0
-    #         stim_.dur = 1e9
+    for cell_ in ca3_schaffer_collaterals:
+        stim_ = h.IClamp(cell_.soma(0.5))
+        stim_.delay = 0
+        stim_.dur = 1e9
 
-    #         VecStim.play(stim_._ref_amp, VecT, 1)
-    #         cell_._inputs_list.append(stim_)
+        VecStim.play(stim_._ref_amp, VecT, 1)
+        cell_._inputs_list.append(stim_)
 
-    #         stim_amp.record(stim_._ref_i) # last stim_
+        stim_amp.record(stim_._ref_i) # last stim_
 
     # TODO : retrieve from parameters file
     # create inputs from CA3 Schaffer collaterals
@@ -662,7 +661,7 @@ for k in K_factors: # for SCA -> PYR weights
     local_spikes_sca_last = {cell_._gid: list(cell_.spike_times_last_node) for cell_ in ca3_schaffer_collaterals}
 
     # local inputs
-    local_inputs_sca = {cell_._gid: list(cell_._inputs_vector) for cell_ in ca3_schaffer_collaterals}
+    # local_inputs_sca = {cell_._gid: list(cell_._inputs_vector) for cell_ in ca3_schaffer_collaterals}
 
     # send results to all processors
     all_potential_pyr = pc.py_alltoall([local_potential_pyr] + [None] * (pc.nhost() - 1))
@@ -683,7 +682,7 @@ for k in K_factors: # for SCA -> PYR weights
     all_spikes_sca = pc.py_alltoall([local_spikes_sca] + [None] * (pc.nhost() - 1))
     all_spikes_sca_last = pc.py_alltoall([local_spikes_sca_last] + [None] * (pc.nhost() - 1))
 
-    all_inputs_sca = pc.py_alltoall([local_inputs_sca] + [None] * (pc.nhost() - 1))
+    # all_inputs_sca = pc.py_alltoall([local_inputs_sca] + [None] * (pc.nhost() - 1))
 
     if rank == 0:
         # combine the data from the various processors
@@ -705,7 +704,7 @@ for k in K_factors: # for SCA -> PYR weights
         spikes_sca = {}
         spikes_sca_last = {}
 
-        inputs_sca = {}
+        # inputs_sca = {}
 
         for data in all_potential_pyr:
             potential_pyr.update(data)
@@ -752,8 +751,8 @@ for k in K_factors: # for SCA -> PYR weights
         for data in all_spikes_sca_last:
             spikes_sca_last.update(data)
 
-        for data in all_inputs_sca:
-            inputs_sca.update(data)
+        # for data in all_inputs_sca:
+        #     inputs_sca.update(data)
 
         # arrange spikes
         id_spikes_pyr = []
@@ -796,7 +795,7 @@ for k in K_factors: # for SCA -> PYR weights
 
         window_size = 1 #ms
 
-        window_size_Pxx = 50
+        window_size_Pxx = 1000
         window_width_Pxx = int(window_size_Pxx * (1/window_size))
         overlap_Pxx = 0.9
         window_overlap_Pxx = int(window_width_Pxx*overlap_Pxx)
@@ -817,8 +816,13 @@ for k in K_factors: # for SCA -> PYR weights
         t_FR_sca, count_sca, FR_sca, _ = compute_FR(np.array(t_spikes_sca)*1e-3, n_schaffer_ca3, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
         t_FR_sca_last, count_sca_last, FR_sca_last, _ = compute_FR(np.array(t_spikes_sca_last)*1e-3, n_schaffer_ca3, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
 
-        with open(os.path.join(dirs["amp_dir"], "output.txt"), "w") as f:
-            f.write("Simulation parameters\n")
+        with open(os.path.join(dirs["save_dir"], "output.txt"), "w") as f:
+            f.write("Git parameters\n")
+            f.write("-------------------\n")
+            for key, value in git_kwargs.items():
+                f.write(f"{key} : {value}\n")
+
+            f.write("\n\nSimulation parameters\n")
             f.write("-------------------------\n")
             f.write("remark :\n")
             f.write("- no Pyr - Pyr connections\n")
@@ -874,7 +878,7 @@ for k in K_factors: # for SCA -> PYR weights
         save_membrane_potential(os.path.join(dirs['data'], 'CA3_sca_i.npz'), np.array(t_vec), current_sca)
         save_membrane_potential(os.path.join(dirs['data'], 'CA3_sca_last_i.npz'), np.array(t_vec), current_sca_last) 
 
-        save_membrane_potential(os.path.join(dirs['data'], 'theta_inputs.npz'), np.array(t_vec), inputs_sca)  
+        # save_membrane_potential(os.path.join(dirs['data'], 'theta_inputs.npz'), np.array(t_vec), inputs_sca)  
 
         np.savez(os.path.join(dirs['data'], 'CA1_pyr_spikemon.npz'), cell_id=np.array(id_spikes_pyr), t_spike=np.array(t_spikes_pyr))
         np.savez(os.path.join(dirs['data'], 'CA1_bc_spikemon.npz'), cell_id=np.array(id_spikes_bc), t_spike=np.array(t_spikes_bc))
@@ -893,7 +897,7 @@ for k in K_factors: # for SCA -> PYR weights
                     ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                     x_lim=[settings.duration - 1e3, settings.duration], size_raster=1., **git_kwargs) # last second
 
-            # np.savez(os.path.join(dirs['data'], 'ramping_current.npz'), t=np.array(t_vec), amplitude=np.array(stim_amp))
+        np.savez(os.path.join(dirs['data'], 'ramping_current.npz'), t=np.array(t_vec), amplitude=np.array(stim_amp))
             # np.savez(os.path.join(dirs['data'], 'oscillatory_current.npz'), t=np.array(t_vec), amplitude=np.array(osc_amp))
         np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
 
@@ -924,7 +928,7 @@ for k in K_factors: # for SCA -> PYR weights
 
     # format vectors
     t_vec.resize(0)
-    # stim_amp.resize(0)
+    stim_amp.resize(0)
     # osc_amp.resize(0)
     i_noise.resize(0)
 
