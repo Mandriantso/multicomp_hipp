@@ -133,8 +133,8 @@ settings.init(data)
 
 # for watermaks on figures -> reproducibility
 git_kwargs = {'timestamp': time.ctime(),
-              'branch': settings.git_branch, 
-              'short_hash': settings.git_short_hash,
+              'branch': get_git_revision_branch(), 
+              'short_hash': get_git_revision_hash(),
               'script_name': os.path.basename(__file__),
               'config_file': filename}
 
@@ -159,7 +159,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - noisy input offset_50 wsca_1.0 amp_0.05"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - noisy input offset_50 wsca_1.0 amp_0.1"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -738,7 +738,7 @@ for cell_ in ca1_pyr_cells: # to | from
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA3_CA1[0]*4.0
+            nc_.weight[0] = settings.w_CA3_CA1[0]*1.0
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -798,7 +798,7 @@ if rank == 0:
     sys.stdout.flush()
 
 duration = 5000
-amp = 0.05#0.005 #0 #6.0
+amp = 0.1#0.005 #0 #6.0
 delay = 1000
 
 # osc_amp = h.Vector()
@@ -1083,16 +1083,20 @@ if rank == 0:
     t_FR_sca, count_sca, FR_sca, _ = compute_FR(np.array(t_spikes_sca_last)*1e-3, n_schaffers_ca3, duration*1e-3, winsize_fr*1e-3, overlap_fr)
 
     with open(os.path.join(dirs["save_dir"], "output.txt"), "w") as f:
-        f.write("Simulation parameters\n")
+        f.write("Git parameters\n")
+        f.write("-------------------\n")
+        for key, value in git_kwargs.items():
+            f.write(f"{key} : {value}\n")
+
+        f.write("\n\nSimulation parameters\n")
         f.write("-------------------------\n")
         f.write("remark :\n")
         f.write("Je me suis rendue compte que mes collatéraux de schaffer ne spikaient pas à une fréquence gamma, mais beta\n")
-        f.write("J'ai augmenté l'amplitude de l'input theta à 0.05 nA au lieu de 0.02 nA pour y remédier")
+        f.write("J'ai augmenté l'amplitude de l'input theta à 0.1 nA au lieu de 0.02 nA pour y remédier")
         f.write("Je refais les expériences w_sca * 1 et offset (0, 50)")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- pyr-bc weights used for sca-pyr connections\n")
         f.write("- BC - Pyr constrained to one connection max\n")
-        f.write("- Monopolar electrode placed outside hippocampus but in inner fold\n")
         f.write("- Lamellar coordinates used\n")
         f.write("- Higher amplitude than minimum amplitude to elicit APs on the closest neuron to electrode used (2 mA), from test_excitability_elec.ipynb\n")
         f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
