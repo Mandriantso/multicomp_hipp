@@ -159,7 +159,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - noisy input offset_50 wsca_1.0 amp_0.1"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - noisy input constraint on schaffer input"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -403,7 +403,7 @@ for i in range(n_olm_ca1):
 for i in range(len(ca3_schaffer_trajectories)):
     for j in range(len(ca1_pyr_coords)):
         dist_value = np.sqrt((ca3_schaffer_trajectories[i][-1, 5] - ca1_pyr_coords[j, 5])**2 + (ca3_schaffer_trajectories[i][-1, 6] - ca1_pyr_coords[j, 6])**2)
-        if settings.syn_dist_CA3_CA1[0] >= dist_value:
+        if settings.syn_dist_CA3_CA1[0] >= dist_value and conn_mat[n_cells_ca1: , j].sum(axis=0) < 3: # 3 schaffer inputs for each pyramidal cell
             conn_mat[n_cells_ca1 + i, j] = 1
 
 np.save(os.path.join(dirs['data'], "connection_matrix.npy"), conn_mat)
@@ -798,7 +798,7 @@ if rank == 0:
     sys.stdout.flush()
 
 duration = 5000
-amp = 0.1#0.005 #0 #6.0
+amp = 0.02#0.005 #0 #6.0
 delay = 1000
 
 # osc_amp = h.Vector()
@@ -1091,9 +1091,10 @@ if rank == 0:
         f.write("\n\nSimulation parameters\n")
         f.write("-------------------------\n")
         f.write("remark :\n")
-        f.write("Je me suis rendue compte que mes collatéraux de schaffer ne spikaient pas à une fréquence gamma, mais beta\n")
-        f.write("J'ai augmenté l'amplitude de l'input theta à 0.1 nA au lieu de 0.02 nA pour y remédier")
-        f.write("Je refais les expériences w_sca * 1 et offset (0, 50)")
+        f.write("J'ai calculer le nombre de connexions schaffers reçues par chaque cellule pyramidale\n")
+        f.write("J'ai remarqué que le min était à 0 et le max à 7, la moyenne à 3.83")
+        f.write("J'ai donc rajouté une contrainte pour avoir max 3 inputs des schaffers")
+        f.write("Je refais les expériences w_sca * 1 et offset (0, 50) pour un courant oscillatoire à 0.02nA")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- pyr-bc weights used for sca-pyr connections\n")
         f.write("- BC - Pyr constrained to one connection max\n")
