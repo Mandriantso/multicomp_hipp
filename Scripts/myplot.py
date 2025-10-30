@@ -14,7 +14,7 @@ def plot_watermark(fig, **git_kwargs):
     """ Add simulation infomation on the figure """
 
     for i, (key, value) in enumerate(git_kwargs.items()):
-        plt.text(.9, 1 - 0.015 * len(git_kwargs) - 0.01 * i, f'{key} : {value}\n',
+        plt.text(.9, 1 - 0.01 * len(git_kwargs) - 0.01 * i, f'{key} : {value}\n',
              transform=fig.transFigure, ha="right", va="top", clip_on=False,
              color = "black", family="Roboto Mono", weight="400", size="xx-small")
 
