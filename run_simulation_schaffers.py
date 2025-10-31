@@ -738,7 +738,7 @@ for cell_ in ca1_pyr_cells: # to | from
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA3_CA1[0]*0.5
+            nc_.weight[0] = settings.w_CA3_CA1[0]*0.3
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -1094,7 +1094,7 @@ if rank == 0:
         f.write("J'ai calculer le nombre de connexions schaffers reçues par chaque cellule pyramidale\n")
         f.write("J'ai remarqué que le min était à 0 et le max à 7, la moyenne à 3.83")
         f.write("J'ai donc rajouté une contrainte pour avoir max 3 inputs des schaffers")
-        f.write("Je refais les expériences w_sca * 0.5 et offset (0, 50) pour un courant oscillatoire à 0.02nA")
+        f.write("Je refais les expériences w_sca * 0.3 et offset (0, 50) pour un courant oscillatoire à 0.02nA")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- pyr-bc weights used for sca-pyr connections\n")
         f.write("- BC - Pyr constrained to one connection max\n")
@@ -1104,7 +1104,7 @@ if rank == 0:
         f.write("BC - BC weight : {}\n".format(settings.w_CA1[1][1]))
         f.write("OLM - Pyr weight : {}\n".format(settings.w_CA1[2][0]))
         f.write("Pyr - OLM weight : {}\n".format(settings.w_CA1[0][2]))
-        f.write("\nsca - pyr weight : {}\n".format(settings.w_CA3_CA1[0]*0.5))
+        f.write("\nsca - pyr weight : {}\n".format(settings.w_CA3_CA1[0]*0.3))
 
         f.write("\n\nSimulation results\n")
         f.write("-------------------------\n")
