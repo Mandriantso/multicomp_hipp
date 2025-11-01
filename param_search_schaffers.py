@@ -62,7 +62,7 @@ parser.add_argument('-sd', '--save_dir',
                     nargs='?',
                     metavar='-sd',
                     type=str,
-                    default='new_param_search_paper_good_OLM/SCA_weights',
+                    default='new_param_search_paper_good_OLM/SCA_weights_constrained',
                     help='Destination directory to save the results')
 
 args = parser.parse_args()
@@ -99,7 +99,7 @@ rank = pc.id()
 # factor by which to multiply E -> I and I -> E weights
 # K_factors = [0.1, 0.25, 0.33, 0.5, 0.6, 0.75] 
 # K_factors = [2.25, 2.33, 2.5, 2.6, 2.75, 3.] 
-K_factors = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0] 
+K_factors = [0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0] 
 # k_x = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.]
 
 if rank == 0:
@@ -317,7 +317,7 @@ for i in range(n_olm_ca1):
 for i in range(n_schaffer_ca3):
     for j in range(n_pyr_ca1):
         dist_value = np.sqrt((ca3_schaffer_trajectories[i][-1, 5] - ca1_pyr_coords[j, 5])**2 + (ca3_schaffer_trajectories[i][-1, 6] - ca1_pyr_coords[j, 6])**2)
-        if settings.syn_dist_CA3_CA1[0] >= dist_value:
+        if settings.syn_dist_CA3_CA1[0] >= dist_value and conn_mat[n_cells_ca1: , j].sum(axis=0) < 3:
             conn_mat[i + n_cells_ca1, j] = 1
 
 # fill postsynaptic and presynaptic neurons
@@ -528,27 +528,30 @@ for k in K_factors: # for SCA -> PYR weights
 
     # osc_amp = h.Vector()
     # setting oscillatory input current
-    # for cell_ in ca3_schaffer_collaterals:
-    #     r_osc = 0 # random.uniform(0, 100)
-    #     target_sec = cell_.soma
-    #     input_ = oscInput(cell_, target_sec(0.5), 500+r_osc, settings.duration, 6, amp, noisy=False)
-    #     cell_._inputs_vector.record(input_._ref_i)
+    amp = 0.02
+    delay = 1000
+
+    for cell_ in ca3_schaffer_collaterals:
+        r_osc = random.uniform(0, 50)
+        target_sec = cell_.soma
+        input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, settings.duration, 6, amp, noisy=False)
+        cell_._inputs_vector.record(input_._ref_i)
     # osc_amp.record(input_._ref_i)
 
     # setting current vectors
-    VecT = h.Vector([0, settings.duration])
-    VecStim = h.Vector([0., 1.])
-    stim_amp = h.Vector()
+    # VecT = h.Vector([0, settings.duration])
+    # VecStim = h.Vector([0., 1.])
+    # stim_amp = h.Vector()
 
-    for cell_ in ca3_schaffer_collaterals:
-        stim_ = h.IClamp(cell_.soma(0.5))
-        stim_.delay = 0
-        stim_.dur = 1e9
+    # for cell_ in ca3_schaffer_collaterals:
+    #     stim_ = h.IClamp(cell_.soma(0.5))
+    #     stim_.delay = 0
+    #     stim_.dur = 1e9
 
-        VecStim.play(stim_._ref_amp, VecT, 1)
-        cell_._inputs_list.append(stim_)
+    #     VecStim.play(stim_._ref_amp, VecT, 1)
+    #     cell_._inputs_list.append(stim_)
 
-        stim_amp.record(stim_._ref_i) # last stim_
+    #     stim_amp.record(stim_._ref_i) # last stim_
 
     # TODO : retrieve from parameters file
     # create inputs from CA3 Schaffer collaterals
@@ -661,7 +664,7 @@ for k in K_factors: # for SCA -> PYR weights
     local_spikes_sca_last = {cell_._gid: list(cell_.spike_times_last_node) for cell_ in ca3_schaffer_collaterals}
 
     # local inputs
-    # local_inputs_sca = {cell_._gid: list(cell_._inputs_vector) for cell_ in ca3_schaffer_collaterals}
+    local_inputs_sca = {cell_._gid: list(cell_._inputs_vector) for cell_ in ca3_schaffer_collaterals}
 
     # send results to all processors
     all_potential_pyr = pc.py_alltoall([local_potential_pyr] + [None] * (pc.nhost() - 1))
@@ -682,7 +685,7 @@ for k in K_factors: # for SCA -> PYR weights
     all_spikes_sca = pc.py_alltoall([local_spikes_sca] + [None] * (pc.nhost() - 1))
     all_spikes_sca_last = pc.py_alltoall([local_spikes_sca_last] + [None] * (pc.nhost() - 1))
 
-    # all_inputs_sca = pc.py_alltoall([local_inputs_sca] + [None] * (pc.nhost() - 1))
+    all_inputs_sca = pc.py_alltoall([local_inputs_sca] + [None] * (pc.nhost() - 1))
 
     if rank == 0:
         # combine the data from the various processors
@@ -704,7 +707,7 @@ for k in K_factors: # for SCA -> PYR weights
         spikes_sca = {}
         spikes_sca_last = {}
 
-        # inputs_sca = {}
+        inputs_sca = {}
 
         for data in all_potential_pyr:
             potential_pyr.update(data)
@@ -751,8 +754,8 @@ for k in K_factors: # for SCA -> PYR weights
         for data in all_spikes_sca_last:
             spikes_sca_last.update(data)
 
-        # for data in all_inputs_sca:
-        #     inputs_sca.update(data)
+        for data in all_inputs_sca:
+            inputs_sca.update(data)
 
         # arrange spikes
         id_spikes_pyr = []
@@ -795,7 +798,7 @@ for k in K_factors: # for SCA -> PYR weights
 
         window_size = 1 #ms
 
-        window_size_Pxx = 1000
+        window_size_Pxx = 150
         window_width_Pxx = int(window_size_Pxx * (1/window_size))
         overlap_Pxx = 0.9
         window_overlap_Pxx = int(window_width_Pxx*overlap_Pxx)
@@ -825,6 +828,7 @@ for k in K_factors: # for SCA -> PYR weights
             f.write("\n\nSimulation parameters\n")
             f.write("-------------------------\n")
             f.write("remark :\n")
+            f.write("J'ai donc rajouté une contrainte pour avoir max 3 inputs des schaffers")
             f.write("- no Pyr - Pyr connections\n")
             f.write("- BC - Pyr constrained to one connection max\n")
             f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
@@ -855,6 +859,7 @@ for k in K_factors: # for SCA -> PYR weights
         fv_pyr, tv_pyr, pspec_pyr = my_specgram2(FR_pyr, fs_n, window_width_Pxx, window_overlap_Pxx, k=2, **specgram_kwargs)
         fv_bc, tv_bc, pspec_bc = my_specgram2(FR_bc, fs_n, window_width_Pxx, window_overlap_Pxx, k=2, **specgram_kwargs)
         fv_olm, tv_olm, pspec_olm = my_specgram2(FR_olm, fs_n, window_width_Pxx, window_overlap_Pxx, k=2, **specgram_kwargs)
+        fv_sca_last, tv_sca_last, pspec_sca_last = my_specgram2(FR_sca_last, fs_n, window_width_Pxx, window_overlap_Pxx, k=2, **specgram_kwargs)
 
         vlow.append(pspec_pyr.min())
         vhigh.append(pspec_pyr.max())
@@ -863,7 +868,8 @@ for k in K_factors: # for SCA -> PYR weights
             cmsh.set_clim(min(vlow), max(vhigh))
 
         save_specgram(os.path.join(dirs['figures'], 'specgram.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], **git_kwargs)
-        save_specgram(os.path.join(dirs['figures'], 'specgram_0_50.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0, 50], **git_kwargs)
+        save_specgram(os.path.join(dirs['figures'], 'specgram_0_50.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0, 150], **git_kwargs)
+        save_specgram(os.path.join(dirs['figures'], 'specgram_1s.png'), [tv_pyr, tv_bc, tv_olm, tv_sca_last], [fv_pyr, fv_bc, fv_olm, fv_sca_last], [pspec_pyr, pspec_bc, pspec_olm, pspec_sca_last], ["pyramidal cells", "basket cells", "olm cells", "schaffer collaterals"], xlim=[3, 4], ylim=[0, 150], **git_kwargs)
 
         # save vectors
         save_membrane_potential(os.path.join(dirs['data'], 'CA1_pyr_Vm.npz'), np.array(t_vec), potential_pyr) 
@@ -878,7 +884,7 @@ for k in K_factors: # for SCA -> PYR weights
         save_membrane_potential(os.path.join(dirs['data'], 'CA3_sca_i.npz'), np.array(t_vec), current_sca)
         save_membrane_potential(os.path.join(dirs['data'], 'CA3_sca_last_i.npz'), np.array(t_vec), current_sca_last) 
 
-        # save_membrane_potential(os.path.join(dirs['data'], 'theta_inputs.npz'), np.array(t_vec), inputs_sca)  
+        save_membrane_potential(os.path.join(dirs['data'], 'theta_inputs.npz'), np.array(t_vec), inputs_sca)  
 
         np.savez(os.path.join(dirs['data'], 'CA1_pyr_spikemon.npz'), cell_id=np.array(id_spikes_pyr), t_spike=np.array(t_spikes_pyr))
         np.savez(os.path.join(dirs['data'], 'CA1_bc_spikemon.npz'), cell_id=np.array(id_spikes_bc), t_spike=np.array(t_spikes_bc))
@@ -897,7 +903,7 @@ for k in K_factors: # for SCA -> PYR weights
                     ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                     x_lim=[settings.duration - 1e3, settings.duration], size_raster=1., **git_kwargs) # last second
 
-        np.savez(os.path.join(dirs['data'], 'ramping_current.npz'), t=np.array(t_vec), amplitude=np.array(stim_amp))
+        # np.savez(os.path.join(dirs['data'], 'ramping_current.npz'), t=np.array(t_vec), amplitude=np.array(stim_amp))
             # np.savez(os.path.join(dirs['data'], 'oscillatory_current.npz'), t=np.array(t_vec), amplitude=np.array(osc_amp))
         np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
 
@@ -928,7 +934,7 @@ for k in K_factors: # for SCA -> PYR weights
 
     # format vectors
     t_vec.resize(0)
-    stim_amp.resize(0)
+    # stim_amp.resize(0)
     # osc_amp.resize(0)
     i_noise.resize(0)
 
@@ -948,6 +954,8 @@ for k in K_factors: # for SCA -> PYR weights
         cell_.last_node_v.resize(0)
         cell_.last_node_i.resize(0)
         cell_.spike_times_last_node.resize(0)
+
+        cell_._inputs_vector.resize(0)
 
 
     pc.barrier()
