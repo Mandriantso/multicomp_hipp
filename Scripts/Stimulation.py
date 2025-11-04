@@ -8,13 +8,14 @@ def set_rx_point_elec(cell, stim_pos, rho):
 			for seg in sec_id:
 				r = np.sqrt((seg.x_xtra - stim_pos[0])**2 + (seg.y_xtra - stim_pos[1])**2 + (seg.z_xtra - stim_pos[2])**2)
 				r = max(r, (400))
+				# r = max(r, seg.diam/2)
 				# if r==0:
 				# 	r = seg.diam / 2
 				
 				seg.rx_xtra = (rho / (4 * np.pi * r)) * 0.01
 
 
-def set_rx_bipolar(cell, stim_pos_1, stim_pos_2, rho): # TODO : finish computing rx from Ted's calcrx
+def set_rx_bipolar(cell, stim_pos_1, stim_pos_2, rho):
 	# shape_coords = len(stim_pos_1)
 
 	# dist_elec = 0
@@ -28,10 +29,41 @@ def set_rx_bipolar(cell, stim_pos_1, stim_pos_2, rho): # TODO : finish computing
 				r1 = np.sqrt((seg.x_xtra - stim_pos_1[0])**2 + (seg.y_xtra - stim_pos_1[1])**2 + (seg.z_xtra - stim_pos_1[2])**2)
 				r2 = np.sqrt((seg.x_xtra - stim_pos_2[0])**2 + (seg.y_xtra - stim_pos_2[1])**2 + (seg.z_xtra - stim_pos_2[2])**2)
 				# r = max(r, (800))
+				# r1 = max(r1, seg.diam/2)
+				r1 = max(r1, 400)
+				# r2 = max(r2, seg.diam/2)
+				r2 = max(r2, 400)
 				# if r==0:
 				# 	r = seg.diam / 2
 				
 				seg.rx_xtra = (rho / (4 * np.pi)) * ((1/r1) - (1/r2)) * 0.01
+
+
+def set_rx_bipolar_2(cell, stim_pos_1, stim_pos_2, rho): 
+	# shape_coords = len(stim_pos_1)
+
+	# dist_elec = 0
+	# for i in range(shape_coords):
+	# 	dist_elec += (stim_pos_1[i] - stim_pos_2[i])**2
+	# dist_elec = np.sqrt(dist_elec)
+
+	for sec_id in cell.all:
+		if h.ismembrane('xtra', sec=sec_id):
+			for seg in sec_id:
+				r1 = np.sqrt((seg.x_xtra - stim_pos_1[0])**2 + (seg.y_xtra - stim_pos_1[1])**2 + (seg.z_xtra - stim_pos_1[2])**2)
+				r2 = np.sqrt((seg.x_xtra - stim_pos_2[0])**2 + (seg.y_xtra - stim_pos_2[1])**2 + (seg.z_xtra - stim_pos_2[2])**2)
+				# r = max(r, (800))
+				# r1 = max(r1, seg.diam/2)
+				r1 = max(r1, 400)
+				# r2 = max(r2, seg.diam/2)
+				r2 = max(r2, 400)
+
+				rx1 = (rho / (4 * np.pi * r1)) * 0.01
+				rx2 = (rho / (4 * np.pi * r2)) * 0.01
+				# if r==0:
+				# 	r = seg.diam / 2
+				
+				seg.rx_xtra = rx1 + rx2
 
 
 def set_xtra_mechanism(cell):
@@ -63,7 +95,7 @@ def attach_stim(cell, attached, stim_amp, stim_time):
 				
 
 # create rectangular waveform stimulation
-def stim_waveform(stim_amp, stim_time, delay, dur, amp):
+def stim_waveform(stim_amp, stim_time, delay, dur, amp, dur_stim):
 	stim_amp.resize(6)
 	stim_amp.fill(0)
 	stim_amp.x[2] = 1
@@ -75,6 +107,6 @@ def stim_waveform(stim_amp, stim_time, delay, dur, amp):
 	stim_time.x[2] = delay
 	stim_time.x[3] = delay + dur
 	stim_time.x[4] = delay + dur
-	stim_time.x[5] = delay + dur + 1
+	stim_time.x[5] = dur_stim
 	
 	return stim_amp, stim_time
