@@ -237,7 +237,7 @@ def main():
 				# v_vec_soma_potential.record(cell.soma(0.5)._ref_v)
 
 				set_rx_point_elec(cell, stim_pos, RHO)
-				stim_amp, stim_time = stim_waveform(stim_amp, stim_time, DEL, DUR, amp)
+				stim_amp, stim_time = stim_waveform(stim_amp, stim_time, DEL, DUR, amp, dur_stim=350)
 				attach_stim(cell, ATTACHED__, stim_amp, stim_time)
 
 				print('Running simulation...')
@@ -307,7 +307,7 @@ def main():
 				# v_vec_soma_potential.record(cell.soma(0.5)._ref_v)
 
 				set_rx_point_elec(cell, stim_pos, RHO)
-				stim_amp, stim_time = stim_waveform(stim_amp, stim_time, DEL, DUR, amp)
+				stim_amp, stim_time = stim_waveform(stim_amp, stim_time, DEL, DUR, amp, dur_stim=350)
 				attach_stim(cell, ATTACHED__, stim_amp, stim_time)
 
 				print('Running simulation...')
