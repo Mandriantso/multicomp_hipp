@@ -1,18 +1,12 @@
 import os
-import sys
 import time
 
 import numpy as np
-from collections import OrderedDict
 
-import efel
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from mpl_toolkits.mplot3d import Axes3D
-from PyNeuronToolbox.morphology import shapeplot, mark_locations
 
-from neuron import h, hclass
+from neuron import h
 from Cells.Cells import *
 from Scripts.utilities import *
 from Scripts.Stimulation import *
