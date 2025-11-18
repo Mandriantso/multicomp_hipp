@@ -5,7 +5,7 @@ from datetime import datetime
 import argparse
 
 from neuron import h
-from Cells.Cells import PyramidalCell, BasketCell, OLMCell, SchafferCollateral
+from Cells.Cells import PyramidalCell, BasketCell, OLMCell, SchafferCollateral, SchafferCollateral_2
 from Scripts.Stimulation import *
 from Scripts.Network import *
 from Scripts.myplot import save_raster, save_FR, save_specgram, plot_watermark
@@ -159,7 +159,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - new schaffer distribution"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - new schaffer distribution McIntyre model"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -303,7 +303,7 @@ ca1_cells = ca1_pyr_cells + ca1_bc_cells + ca1_olm_cells
 
 ca3_schaffers = []
 for gid_first_node, gid_last_node in zip(gids_sca_first_node, gids_sca_last_node):
-    cell_ = SchafferCollateral(gid=gid_first_node, gid_last_node=gid_last_node, nodes_coordinates=ca3_schaffer_nodes_coordinates[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
+    cell_ = SchafferCollateral_2(gid=gid_first_node, gid_last_node=gid_last_node, nodes_coordinates=ca3_schaffer_nodes_coordinates[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
                           x_intrinsic_last_node=ca3_schaffer_xs_intrinsic[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)], y_intrinsic_last_node=ca3_schaffer_ys_intrinsic[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
                           x_flat_last_node=ca3_schaffer_xs_flat[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)], y_flat_last_node=ca3_schaffer_ys_flat[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
                           x=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 0], y=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 1], theta=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 2],
@@ -1101,7 +1101,7 @@ if rank == 0:
         f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
         f.write("Comme ils ont l'air mieux distribués dans l'espace, j'ai retiré la contrainte qui consister à avoir 3 connexions de Schaffer max par pyr")
         f.write("Je refais les expériences w_sca * 3 et offset (0, 50) pour un courant oscillatoire à 0.02nA")
-        f.write("Collatéraux avec le modèle de Mirzakhalili")
+        f.write("Collatéraux avec le modèle de McIntyre")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- pyr-bc weights used for sca-pyr connections\n")
         f.write("- BC - Pyr constrained to one connection max\n")
