@@ -159,7 +159,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - noisy input constraint on schaffer input"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - new schaffer distribution"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -202,7 +202,12 @@ ca1_bc_coords = np.load(os.path.join(ca1_coordinates, 'bc_coordinates.npy'))
 ca1_olm_coords = np.load(os.path.join(ca1_coordinates, 'olm_coordinates.npy'))
 
 ca3_schaffer_coords = np.load(os.path.join(ca3_coordinates, 'pyr_coordinates.npy'))
-ca3_schaffer_trajectories = np.load(os.path.join(ca3_coordinates, 'schaffer_trajectories_all_coords.npy'), allow_pickle=True)
+ca3_schaffer_nodes_coordinates = np.load(os.path.join(ca3_coordinates, 'nodes_coordinates.npy'), allow_pickle=True)
+ca3_schaffer_xs_intrinsic = np.load(os.path.join(ca3_coordinates, 'xs_intrinsic_last_node.npy'), allow_pickle=True)
+ca3_schaffer_ys_intrinsic = np.load(os.path.join(ca3_coordinates, 'ys_intrinsic_last_node.npy'), allow_pickle=True)
+ca3_schaffer_xs_flat = np.load(os.path.join(ca3_coordinates, 'xs_flat_last_node.npy'), allow_pickle=True)
+ca3_schaffer_ys_flat = np.load(os.path.join(ca3_coordinates, 'ys_flat_last_node.npy'), allow_pickle=True)
+# ca3_schaffer_trajectories = np.load(os.path.join(ca3_coordinates, 'schaffer_trajectories_all_coords.npy'), allow_pickle=True)
 
 
 # create cells
@@ -298,7 +303,9 @@ ca1_cells = ca1_pyr_cells + ca1_bc_cells + ca1_olm_cells
 
 ca3_schaffers = []
 for gid_first_node, gid_last_node in zip(gids_sca_first_node, gids_sca_last_node):
-    cell_ = SchafferCollateral(gid=gid_first_node, gid_last_node=gid_last_node, axon_trajectory=ca3_schaffer_trajectories[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
+    cell_ = SchafferCollateral(gid=gid_first_node, gid_last_node=gid_last_node, nodes_coordinates=ca3_schaffer_nodes_coordinates[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
+                          x_intrinsic_last_node=ca3_schaffer_xs_intrinsic[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)], y_intrinsic_last_node=ca3_schaffer_ys_intrinsic[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
+                          x_flat_last_node=ca3_schaffer_xs_flat[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)], y_flat_last_node=ca3_schaffer_ys_flat[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
                           x=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 0], y=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 1], theta=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 2],
                           x_intrinsic=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 3], y_intrinsic=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 4],
                           x_flat=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 5], y_flat=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 6])
@@ -400,10 +407,10 @@ for i in range(n_olm_ca1):
 
 
 # connection from CA3
-for i in range(len(ca3_schaffer_trajectories)):
+for i in range(len(ca3_schaffer_xs_flat)):
     for j in range(len(ca1_pyr_coords)):
-        dist_value = np.sqrt((ca3_schaffer_trajectories[i][-1, 5] - ca1_pyr_coords[j, 5])**2 + (ca3_schaffer_trajectories[i][-1, 6] - ca1_pyr_coords[j, 6])**2)
-        if settings.syn_dist_CA3_CA1[0] >= dist_value and conn_mat[n_cells_ca1: , j].sum(axis=0) < 3: # 3 schaffer inputs for each pyramidal cell
+        dist_value = np.sqrt((ca3_schaffer_xs_flat[i] - ca1_pyr_coords[j, 5])**2 + (ca3_schaffer_ys_flat[i] - ca1_pyr_coords[j, 6])**2)
+        if settings.syn_dist_CA3_CA1[0] >= dist_value: # and conn_mat[n_cells_ca1: , j].sum(axis=0) < 3: # 3 schaffer inputs for each pyramidal cell
             conn_mat[n_cells_ca1 + i, j] = 1
 
 np.save(os.path.join(dirs['data'], "connection_matrix.npy"), conn_mat)
@@ -1091,10 +1098,10 @@ if rank == 0:
         f.write("\n\nSimulation parameters\n")
         f.write("-------------------------\n")
         f.write("remark :\n")
-        f.write("J'ai calculer le nombre de connexions schaffers reçues par chaque cellule pyramidale\n")
-        f.write("J'ai remarqué que le min était à 0 et le max à 7, la moyenne à 3.83")
-        f.write("J'ai donc rajouté une contrainte pour avoir max 3 inputs des schaffers")
+        f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
+        f.write("Comme ils ont l'air mieux distribués dans l'espace, j'ai retiré la contrainte qui consister à avoir 3 connexions de Schaffer max par pyr")
         f.write("Je refais les expériences w_sca * 3 et offset (0, 50) pour un courant oscillatoire à 0.02nA")
+        f.write("Collatéraux avec le modèle de Mirzakhalili")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- pyr-bc weights used for sca-pyr connections\n")
         f.write("- BC - Pyr constrained to one connection max\n")
