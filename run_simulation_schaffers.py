@@ -159,7 +159,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - new schaffer distribution McIntyre model - n_sca_conn constrained"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - new schaffer distribution McIntyre model"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -410,7 +410,7 @@ for i in range(n_olm_ca1):
 for i in range(len(ca3_schaffer_xs_flat)):
     for j in range(len(ca1_pyr_coords)):
         dist_value = np.sqrt((ca3_schaffer_xs_flat[i] - ca1_pyr_coords[j, 5])**2 + (ca3_schaffer_ys_flat[i] - ca1_pyr_coords[j, 6])**2)
-        if settings.syn_dist_CA3_CA1[0] >= dist_value and conn_mat[n_cells_ca1: , j].sum(axis=0) < 3: # 3 schaffer inputs for each pyramidal cell
+        if settings.syn_dist_CA3_CA1[0] >= dist_value: # and conn_mat[n_cells_ca1: , j].sum(axis=0) < 3: # 3 schaffer inputs for each pyramidal cell
             conn_mat[n_cells_ca1 + i, j] = 1
 
 np.save(os.path.join(dirs['data'], "connection_matrix.npy"), conn_mat)
@@ -745,7 +745,7 @@ for cell_ in ca1_pyr_cells: # to | from
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA3_CA1[0]*3
+            nc_.weight[0] = settings.w_CA3_CA1[0]*5
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -1099,8 +1099,8 @@ if rank == 0:
         f.write("-------------------------\n")
         f.write("remark :\n")
         f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
-        f.write("Comme ils ont l'air mieux distribués dans l'espace, j'ai remis la contrainte qui consister à avoir 3 connexions de Schaffer max par pyr")
-        f.write("Je refais les expériences w_sca * 3 et offset (0, 50) pour un courant oscillatoire à 0.02nA")
+        f.write("Comme ils ont l'air mieux distribués dans l'espace, j'ai enlevé la contrainte qui consister à avoir 3 connexions de Schaffer max par pyr")
+        f.write("Je refais les expériences w_sca * 5 et offset (0, 50) pour un courant oscillatoire à 0.02nA")
         f.write("Collatéraux avec le modèle de McIntyre")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- pyr-bc weights used for sca-pyr connections\n")
@@ -1111,7 +1111,7 @@ if rank == 0:
         f.write("BC - BC weight : {}\n".format(settings.w_CA1[1][1]))
         f.write("OLM - Pyr weight : {}\n".format(settings.w_CA1[2][0]))
         f.write("Pyr - OLM weight : {}\n".format(settings.w_CA1[0][2]))
-        f.write("\nsca - pyr weight : {}\n".format(settings.w_CA3_CA1[0]*3))
+        f.write("\nsca - pyr weight : {}\n".format(settings.w_CA3_CA1[0]*5))
 
         f.write("\n\nSimulation results\n")
         f.write("-------------------------\n")
