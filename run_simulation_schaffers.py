@@ -805,7 +805,7 @@ if rank == 0:
     sys.stdout.flush()
 
 duration = 5000
-amp = 0.2#0.005 #0 #6.0
+amp = 0.05#0.005 #0 #6.0
 delay = 1000
 
 # osc_amp = h.Vector()
@@ -1100,7 +1100,7 @@ if rank == 0:
         f.write("remark :\n")
         f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
         f.write("Comme ils ont l'air mieux distribués dans l'espace, j'ai enlevé la contrainte qui consister à avoir 3 connexions de Schaffer max par pyr")
-        f.write("Je refais les expériences w_sca * 3 et offset (0, 50) pour un courant oscillatoire à 0.2nA")
+        f.write("Je refais les expériences w_sca * 3 et offset (0, 50) pour un courant oscillatoire à 0.05nA")
         f.write("Collatéraux avec le modèle de McIntyre")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- pyr-bc weights used for sca-pyr connections\n")
