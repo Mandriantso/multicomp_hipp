@@ -745,7 +745,7 @@ for cell_ in ca1_pyr_cells: # to | from
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA3_CA1[0]*3
+            nc_.weight[0] = settings.w_CA3_CA1[0]*0
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -810,16 +810,24 @@ delay = 1000
 
 # osc_amp = h.Vector()
 # setting oscillatory input current
+# for cell_ in ca3_schaffers:
+#     # target_secs = list(cell_.lm_list)
+#     # target_sec = random.choice(target_secs)
+#     # r_osc = random.uniform(0, 50)
+#     r_osc = 0
+#     target_sec = cell_.soma
+#     input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, duration, 6, amp, noisy=False)
+#     # input_ = oscInput(cell_, target_sec(0.5), 10, duration, 6, amp, noisy=True, sigma=0.005, tau_noise=1)
+#     # osc_amp.record(input_._ref_i)
+#     # cell_._inputs_list.append(osc_amp)
+#     cell_._inputs_vector.record(input_._ref_i)
+
 for cell_ in ca3_schaffers:
-    # target_secs = list(cell_.lm_list)
-    # target_sec = random.choice(target_secs)
-    # r_osc = random.uniform(0, 50)
-    r_osc = 0
-    target_sec = cell_.soma
-    input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, duration, 6, amp, noisy=False)
-    # input_ = oscInput(cell_, target_sec(0.5), 10, duration, 6, amp, noisy=True, sigma=0.005, tau_noise=1)
-    # osc_amp.record(input_._ref_i)
-    # cell_._inputs_list.append(osc_amp)
+    input_ = h.Iclamp(cell_.soma(0.5))
+    input_.delay = delay
+    input_.amp = amp
+    input_.dur = 2.5
+    cell_._inputs_list.append(input_)
     cell_._inputs_vector.record(input_._ref_i)
 
 # setting current vectors
@@ -1100,7 +1108,7 @@ if rank == 0:
         f.write("remark :\n")
         f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
         f.write("Comme ils ont l'air mieux distribués dans l'espace, j'ai enlevé la contrainte qui consister à avoir 3 connexions de Schaffer max par pyr")
-        f.write("Je refais les expériences w_sca * 3 et offset=0 pour un courant oscillatoire à 0.2nA")
+        f.write("Je refais les expériences w_sca * 0 et offset=0 pour un courant rectangulaire de 2.5ms à 0.2nA")
         f.write("Collatéraux avec le modèle de McIntyre")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- pyr-bc weights used for sca-pyr connections\n")
@@ -1111,7 +1119,7 @@ if rank == 0:
         f.write("BC - BC weight : {}\n".format(settings.w_CA1[1][1]))
         f.write("OLM - Pyr weight : {}\n".format(settings.w_CA1[2][0]))
         f.write("Pyr - OLM weight : {}\n".format(settings.w_CA1[0][2]))
-        f.write("\nsca - pyr weight : {}\n".format(settings.w_CA3_CA1[0]*3))
+        f.write("\nsca - pyr weight : {}\n".format(settings.w_CA3_CA1[0]*0))
 
         f.write("\n\nSimulation results\n")
         f.write("-------------------------\n")
