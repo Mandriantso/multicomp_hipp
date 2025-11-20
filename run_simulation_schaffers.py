@@ -920,6 +920,14 @@ if rank == 0:
 
 
 # retrieve results on local processor
+# membrane potential of schaffer nodes
+local_data_nodes_Vm = [cell_.Vm_nodes for cell_ in ca3_schaffers]
+all_data_nodes_Vm = pc.py_gather(local_data_nodes_Vm, 0)
+
+# intracellular current of schaffer nodes
+local_data_nodes_i = [cell_.i_nodes for cell_ in ca3_schaffers]
+all_data_nodes_i = pc.py_gather(local_data_nodes_i, 0)
+
 # local membrane potential
 local_potential_pyr = {cell_._gid: np.array(cell_.soma_v) for cell_ in ca1_pyr_cells}
 local_potential_bc = {cell_._gid: np.array(cell_.soma_v) for cell_ in ca1_bc_cells}
@@ -967,6 +975,16 @@ all_inputs_sca = pc.py_alltoall([local_inputs_sca] + [None] * (pc.nhost() - 1))
 
 if rank == 0:
     # combine the data from the various processors
+    merged_data_nodes_Vm = {}
+    merged_data_nodes_Vm['time'] = t_vec
+    for proc_data_list in all_data_nodes_Vm:
+        merged_data_nodes_Vm.update(proc_data_list)
+
+    merged_data_nodes_i = {}
+    merged_data_nodes_i['time'] = t_vec
+    for proc_data_list in all_data_nodes_i:
+        merged_data_nodes_i.update(proc_data_list)
+
     potential_pyr = {}
     potential_bc = {}
     potential_olm = {}
@@ -1110,6 +1128,7 @@ if rank == 0:
         f.write("Comme ils ont l'air mieux distribués dans l'espace, j'ai enlevé la contrainte qui consister à avoir 3 connexions de Schaffer max par pyr")
         f.write("Je refais les expériences w_sca * 0 et offset=0 pour un courant rectangulaire de 2.5ms à 0.2nA")
         f.write("Collatéraux avec le modèle de McIntyre")
+        f.write("Test sauvegarde des données de chaque noeud")
         f.write("- no Pyr - Pyr connections\n")
         f.write("- pyr-bc weights used for sca-pyr connections\n")
         f.write("- BC - Pyr constrained to one connection max\n")
@@ -1182,6 +1201,9 @@ if rank == 0:
     np.savez(os.path.join(dirs['data'], 'CA1_olm_spikemon.npz'), cell_id=np.array(id_spikes_olm), t_spike=np.array(t_spikes_olm))
     np.savez(os.path.join(dirs['data'], 'CA3_sca_spikemon.npz'), cell_id=np.array(id_spikes_sca), t_spike=np.array(t_spikes_sca))
     np.savez(os.path.join(dirs['data'], 'CA3_sca_last_spikemon.npz'), cell_id=np.array(id_spikes_sca_last), t_spike=np.array(t_spikes_sca_last))
+
+    np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_Vm.npz'), **merged_data_nodes_Vm)
+    np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_i.npz'), **merged_data_nodes_i)
 
     # stim_loc_pyr = np.abs(ca1_pyr_coords[:,5] - settings.stim_pos[0]).argmin()
     # stim_loc_bc = np.abs(ca1_bc_coords[:,5] - settings.stim_pos[0]).argmin()
