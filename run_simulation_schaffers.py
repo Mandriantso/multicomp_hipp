@@ -921,11 +921,16 @@ if rank == 0:
 
 # retrieve results on local processor
 # membrane potential of schaffer nodes
-local_data_nodes_Vm = [cell_.Vm_nodes for cell_ in ca3_schaffers]
+local_data_nodes_Vm = {}
+for cell_ in ca3_schaffers:
+    local_data_nodes_Vm.update(cell_.Vm_nodes)
+# [cell_.Vm_nodes for cell_ in ca3_schaffers]
 all_data_nodes_Vm = pc.py_gather(local_data_nodes_Vm, 0)
 
 # intracellular current of schaffer nodes
-local_data_nodes_i = [cell_.i_nodes for cell_ in ca3_schaffers]
+local_data_nodes_i = {}
+for cell_ in ca3_schaffers:
+    local_data_nodes_i.update(cell_.i_nodes)
 all_data_nodes_i = pc.py_gather(local_data_nodes_i, 0)
 
 # local membrane potential
@@ -976,12 +981,10 @@ all_inputs_sca = pc.py_alltoall([local_inputs_sca] + [None] * (pc.nhost() - 1))
 if rank == 0:
     # combine the data from the various processors
     merged_data_nodes_Vm = {}
-    merged_data_nodes_Vm['time'] = t_vec
     for proc_data_list in all_data_nodes_Vm:
         merged_data_nodes_Vm.update(proc_data_list)
 
     merged_data_nodes_i = {}
-    merged_data_nodes_i['time'] = t_vec
     for proc_data_list in all_data_nodes_i:
         merged_data_nodes_i.update(proc_data_list)
 
