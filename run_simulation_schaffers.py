@@ -823,7 +823,7 @@ delay = 1000
 #     cell_._inputs_vector.record(input_._ref_i)
 
 for cell_ in ca3_schaffers:
-    input_ = h.Iclamp(cell_.soma(0.5))
+    input_ = h.IClamp(cell_.soma(0.5))
     input_.delay = delay
     input_.amp = amp
     input_.dur = 2.5
