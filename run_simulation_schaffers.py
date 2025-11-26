@@ -805,7 +805,7 @@ if rank == 0:
     sys.stdout.flush()
 
 duration = 5000
-amp = 0.2#0.005 #0 #6.0
+amp = 0.02#0.005 #0 #6.0
 delay = 1000
 
 # osc_amp = h.Vector()
@@ -1131,7 +1131,7 @@ if rank == 0:
         f.write("remark :\n")
         f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
         f.write("J'ai fait en sorte que les derniers noeuds soient plus ou moins équidistants")
-        f.write("Je refais les expériences en mettant w_sca*3 et offset=50 pour un oscillatoire de 6Hz à 0.2nA")
+        f.write("Je refais les expériences en mettant w_sca*3 et offset=50 pour un oscillatoire de 6Hz à 0.02nA")
         f.write("Collatéraux avec le modèle de McIntyre")
         f.write("Test sauvegarde des données de chaque noeud")
         f.write("- no Pyr - Pyr connections\n")
