@@ -20,6 +20,7 @@ from matplotlib import colors
 import numpy as np
 import random
 from collections import OrderedDict
+import json
 
 # sys.exit()
 
@@ -201,12 +202,12 @@ ca1_pyr_coords = np.load(os.path.join(ca1_coordinates, 'pyr_coordinates.npy'))
 ca1_bc_coords = np.load(os.path.join(ca1_coordinates, 'bc_coordinates.npy'))
 ca1_olm_coords = np.load(os.path.join(ca1_coordinates, 'olm_coordinates.npy'))
 
-ca3_schaffer_coords = np.load(os.path.join(ca3_coordinates, 'pyr_coordinates.npy'))
-ca3_schaffer_nodes_coordinates = np.load(os.path.join(ca3_coordinates, 'nodes_coordinates.npy'), allow_pickle=True)
-ca3_schaffer_xs_intrinsic = np.load(os.path.join(ca3_coordinates, 'xs_intrinsic_last_node.npy'), allow_pickle=True)
-ca3_schaffer_ys_intrinsic = np.load(os.path.join(ca3_coordinates, 'ys_intrinsic_last_node.npy'), allow_pickle=True)
-ca3_schaffer_xs_flat = np.load(os.path.join(ca3_coordinates, 'xs_flat_last_node.npy'), allow_pickle=True)
-ca3_schaffer_ys_flat = np.load(os.path.join(ca3_coordinates, 'ys_flat_last_node.npy'), allow_pickle=True)
+# ca3_schaffer_coords = np.load(os.path.join(ca3_coordinates, 'pyr_coordinates.npy'))
+ca3_schaffer_nodes_coordinates = np.load(os.path.join(ca3_coordinates, 'nodes_coordinates_equidistant.npy'), allow_pickle=True)
+ca3_schaffer_xs_intrinsic = np.load(os.path.join(ca3_coordinates, 'xs_intrinsic_last_node_equidistant.npy'), allow_pickle=True)
+ca3_schaffer_ys_intrinsic = np.load(os.path.join(ca3_coordinates, 'ys_intrinsic_last_node_equidistant.npy'), allow_pickle=True)
+ca3_schaffer_xs_flat = np.load(os.path.join(ca3_coordinates, 'xs_flat_last_node_equidistant.npy'), allow_pickle=True)
+ca3_schaffer_ys_flat = np.load(os.path.join(ca3_coordinates, 'ys_flat_last_node_equidistant.npy'), allow_pickle=True)
 # ca3_schaffer_trajectories = np.load(os.path.join(ca3_coordinates, 'schaffer_trajectories_all_coords.npy'), allow_pickle=True)
 
 
@@ -306,9 +307,8 @@ for gid_first_node, gid_last_node in zip(gids_sca_first_node, gids_sca_last_node
     cell_ = SchafferCollateral_2(gid=gid_first_node, gid_last_node=gid_last_node, nodes_coordinates=ca3_schaffer_nodes_coordinates[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
                           x_intrinsic_last_node=ca3_schaffer_xs_intrinsic[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)], y_intrinsic_last_node=ca3_schaffer_ys_intrinsic[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
                           x_flat_last_node=ca3_schaffer_xs_flat[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)], y_flat_last_node=ca3_schaffer_ys_flat[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
-                          x=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 0], y=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 1], theta=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 2],
-                          x_intrinsic=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 3], y_intrinsic=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 4],
-                          x_flat=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 5], y_flat=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 6])
+                          x=ca3_schaffer_nodes_coordinates[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)][0, 0], y=ca3_schaffer_nodes_coordinates[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)][0, 1]
+                          )
     ca3_schaffers.append(cell_)
     # associate gid to spike_detector
     pc.cell(gid_first_node, cell_._spike_detector)
@@ -510,10 +510,10 @@ for cell_ in ca1_olm_cells:
         else:
             olm_to_olm += 1
 
-for cell_ in ca3_schaffers:
-    for gid in cell_._postsyn_list:
-        if gid < n_pyr_ca1 * 2:
-            sca_to_pyr += 1
+# for cell_ in ca3_schaffers:
+#     for gid in cell_._postsyn_list:
+#         if gid < n_pyr_ca1 * 2:
+#             sca_to_pyr += 1
 
 local_pyr_post_conn = {rank: [pyr_to_pyr, pyr_to_bc, pyr_to_olm]}
 local_bc_post_conn = {rank: [bc_to_pyr, bc_to_bc, bc_to_olm]}
@@ -810,25 +810,25 @@ delay = 1000
 
 # osc_amp = h.Vector()
 # setting oscillatory input current
-# for cell_ in ca3_schaffers:
-#     # target_secs = list(cell_.lm_list)
-#     # target_sec = random.choice(target_secs)
-#     # r_osc = random.uniform(0, 50)
-#     r_osc = 0
-#     target_sec = cell_.soma
-#     input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, duration, 6, amp, noisy=False)
-#     # input_ = oscInput(cell_, target_sec(0.5), 10, duration, 6, amp, noisy=True, sigma=0.005, tau_noise=1)
-#     # osc_amp.record(input_._ref_i)
-#     # cell_._inputs_list.append(osc_amp)
-#     cell_._inputs_vector.record(input_._ref_i)
-
 for cell_ in ca3_schaffers:
-    input_ = h.IClamp(cell_.soma(0.5))
-    input_.delay = delay
-    input_.amp = amp
-    input_.dur = 2.5
-    cell_._inputs_list.append(input_)
+    # target_secs = list(cell_.lm_list)
+    # target_sec = random.choice(target_secs)
+    # r_osc = random.uniform(0, 50)
+    r_osc = 0
+    target_sec = cell_.soma
+    input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, duration, 6, amp, noisy=False)
+    # input_ = oscInput(cell_, target_sec(0.5), 10, duration, 6, amp, noisy=True, sigma=0.005, tau_noise=1)
+    # osc_amp.record(input_._ref_i)
+    # cell_._inputs_list.append(osc_amp)
     cell_._inputs_vector.record(input_._ref_i)
+
+# for cell_ in ca3_schaffers:
+#     input_ = h.IClamp(cell_.soma(0.5))
+#     input_.delay = delay
+#     input_.amp = amp
+#     input_.dur = 2.5
+#     cell_._inputs_list.append(input_)
+#     cell_._inputs_vector.record(input_._ref_i)
 
 # setting current vectors
 # VecT = h.Vector([0, TSTOP])
@@ -983,10 +983,12 @@ if rank == 0:
     merged_data_nodes_Vm = {}
     for proc_data_list in all_data_nodes_Vm:
         merged_data_nodes_Vm.update(proc_data_list)
+    # merged_data_nodes_Vm['time'] = t_vec
 
     merged_data_nodes_i = {}
     for proc_data_list in all_data_nodes_i:
         merged_data_nodes_i.update(proc_data_list)
+    # merged_data_nodes_i['time'] = t_vec
 
     potential_pyr = {}
     potential_bc = {}
@@ -1128,8 +1130,8 @@ if rank == 0:
         f.write("-------------------------\n")
         f.write("remark :\n")
         f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
-        f.write("Comme ils ont l'air mieux distribués dans l'espace, j'ai enlevé la contrainte qui consister à avoir 3 connexions de Schaffer max par pyr")
-        f.write("Je refais les expériences w_sca * 0 et offset=0 pour un courant rectangulaire de 2.5ms à 0.2nA")
+        f.write("J'ai fait en sorte que les derniers noeuds soient plus ou moins équidistants")
+        f.write("Je refais les expériences en enlevant complètement les connexions de sca et offset=0 pour un oscillatoire de 6Hz à 0.2nA")
         f.write("Collatéraux avec le modèle de McIntyre")
         f.write("Test sauvegarde des données de chaque noeud")
         f.write("- no Pyr - Pyr connections\n")
@@ -1205,8 +1207,10 @@ if rank == 0:
     np.savez(os.path.join(dirs['data'], 'CA3_sca_spikemon.npz'), cell_id=np.array(id_spikes_sca), t_spike=np.array(t_spikes_sca))
     np.savez(os.path.join(dirs['data'], 'CA3_sca_last_spikemon.npz'), cell_id=np.array(id_spikes_sca_last), t_spike=np.array(t_spikes_sca_last))
 
-    np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_Vm.npz'), **merged_data_nodes_Vm)
-    np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_i.npz'), **merged_data_nodes_i)
+    save_all_nodes_data(os.path.join(dirs['data'], 'CA3_all_nodes_Vm'), np.array(t_vec), merged_data_nodes_Vm)
+    save_all_nodes_data(os.path.join(dirs['data'], 'CA3_all_nodes_i'), np.array(t_vec), merged_data_nodes_i)
+    # np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_Vm.npz'), **merged_data_nodes_Vm)
+    # np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_i.npz'), **merged_data_nodes_i)
 
     # stim_loc_pyr = np.abs(ca1_pyr_coords[:,5] - settings.stim_pos[0]).argmin()
     # stim_loc_bc = np.abs(ca1_bc_coords[:,5] - settings.stim_pos[0]).argmin()

@@ -1584,6 +1584,16 @@ class SchafferCollateral_2(Cell):
                  x_flat: float=None,
                  y_flat: float=None) -> None:
 
+        # g=0.661 
+        # self.axonD=5.8 
+        # self.nodeD=2.8 
+        # self.paraD1=2.8 
+        # self.paraD2=5.8 
+        # self.deltax=1000 
+        # self.paralength2=40 
+        # self.nl=110
+        # self.fiberD = 8.7
+
         self.paralength1 = 3.0
         self.nodelength = 1.0
         self.space_p1 = 0.002
@@ -1630,14 +1640,16 @@ class SchafferCollateral_2(Cell):
         self._spike_detector_last_node.record(self.spike_times_last_node)
 
         self.Vm_nodes = {}
-        self.Vm_nodes['cell_id'] = self._gid
+        Vm_dict = {}
         for i in range(len(self.nodes)):
-            self.Vm_nodes[f'node_{i}'] = h.Vector().record(self.nodes[i](0.5)._ref_v)
+            Vm_dict[f'node_{i}'] = h.Vector().record(self.nodes[i](0.5)._ref_v)
+        self.Vm_nodes[f'sca_{self._gid}'] = Vm_dict
 
         self.i_nodes = {}
-        self.i_nodes['cell_id'] = self._gid
+        i_dict = {}
         for i in range(len(self.nodes)):
-            self.i_nodes[f'node_{i}'] = h.Vector().record(self.nodes[i](0.5)._ref_i_membrane)
+            i_dict[f'node_{i}'] = h.Vector().record(self.nodes[i](0.5)._ref_i_membrane)
+        self.i_nodes[f'sca_{self._gid}'] = i_dict
 
         self.last_node_v = h.Vector().record(self.nodes[-1](0.5)._ref_v)
         self.last_node_i = h.Vector().record(self.nodes[-1](0.5)._ref_i_membrane)
