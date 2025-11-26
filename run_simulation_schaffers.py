@@ -510,10 +510,10 @@ for cell_ in ca1_olm_cells:
         else:
             olm_to_olm += 1
 
-# for cell_ in ca3_schaffers:
-#     for gid in cell_._postsyn_list:
-#         if gid < n_pyr_ca1 * 2:
-#             sca_to_pyr += 1
+for cell_ in ca3_schaffers:
+    for gid in cell_._postsyn_list:
+        if gid < n_pyr_ca1 * 2:
+            sca_to_pyr += 1
 
 local_pyr_post_conn = {rank: [pyr_to_pyr, pyr_to_bc, pyr_to_olm]}
 local_bc_post_conn = {rank: [bc_to_pyr, bc_to_bc, bc_to_olm]}
@@ -745,7 +745,7 @@ for cell_ in ca1_pyr_cells: # to | from
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA3_CA1[0]*0
+            nc_.weight[0] = settings.w_CA3_CA1[0]*3
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -813,8 +813,8 @@ delay = 1000
 for cell_ in ca3_schaffers:
     # target_secs = list(cell_.lm_list)
     # target_sec = random.choice(target_secs)
-    # r_osc = random.uniform(0, 50)
-    r_osc = 0
+    r_osc = random.uniform(0, 50)
+    # r_osc = 0
     target_sec = cell_.soma
     input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, duration, 6, amp, noisy=False)
     # input_ = oscInput(cell_, target_sec(0.5), 10, duration, 6, amp, noisy=True, sigma=0.005, tau_noise=1)
@@ -1131,7 +1131,7 @@ if rank == 0:
         f.write("remark :\n")
         f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
         f.write("J'ai fait en sorte que les derniers noeuds soient plus ou moins équidistants")
-        f.write("Je refais les expériences en enlevant complètement les connexions de sca et offset=0 pour un oscillatoire de 6Hz à 0.2nA")
+        f.write("Je refais les expériences en mettant w_sca*3 et offset=50 pour un oscillatoire de 6Hz à 0.2nA")
         f.write("Collatéraux avec le modèle de McIntyre")
         f.write("Test sauvegarde des données de chaque noeud")
         f.write("- no Pyr - Pyr connections\n")
