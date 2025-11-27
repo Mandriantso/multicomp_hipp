@@ -745,7 +745,7 @@ for cell_ in ca1_pyr_cells: # to | from
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA3_CA1[0]*3
+            nc_.weight[0] = settings.w_CA3_CA1[0]*1
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -1131,7 +1131,7 @@ if rank == 0:
         f.write("remark :\n")
         f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
         f.write("J'ai fait en sorte que les derniers noeuds soient plus ou moins équidistants")
-        f.write("Je refais les expériences en mettant w_sca*3 et offset=50 pour un oscillatoire de 6Hz à 0.02nA")
+        f.write("Je refais les expériences en mettant w_sca*1 et offset=50 pour un oscillatoire de 6Hz à 0.2nA")
         f.write("Collatéraux avec le modèle de McIntyre")
         f.write("Test sauvegarde des données de chaque noeud")
         f.write("- no Pyr - Pyr connections\n")
