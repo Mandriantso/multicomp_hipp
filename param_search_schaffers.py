@@ -665,7 +665,7 @@ if __name__ == "__main__":
 
     k_amps = np.arange(0.02, 0.2, 0.01)
     k_w_scale = np.arange(1, 3.1, 0.1)
-    len_worlds = 6
+    len_worlds = 8
 
     # initialize MPI for parallel computing
     h.nrnmpi_init()
