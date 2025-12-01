@@ -49,6 +49,18 @@ def save_membrane_potential(name_file: str, t_vec: np.ndarray, cells_potential: 
     np.savez(name_file, **cells_potential)
 
 
+def save_all_nodes_data(name_file: str, t_vec: np.ndarray, cells_data: dict):
+    # convert all values in dictionnary to np.ndarray and keys to string
+    for cell_id, data in cells_data.items():
+        dict = {}
+        dict['time'] = t_vec
+        dict['cell_id'] = cell_id
+        for k,v in data.items():
+            dict[str(k)] = np.array(v)
+
+        np.savez(f'{name_file}_{str(cell_id)}.npz', **dict)
+
+
 def compute_FR(spikes: np.ndarray,
                N_cells: int,
                duration: int,

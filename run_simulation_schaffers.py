@@ -805,7 +805,7 @@ if rank == 0:
     sys.stdout.flush()
 
 duration = 5000
-amp = 0.02#0.005 #0 #6.0
+amp = 0.2#0.005 #0 #6.0
 delay = 1000
 
 # osc_amp = h.Vector()

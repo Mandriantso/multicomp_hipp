@@ -33,7 +33,7 @@ def get_inputs(n_inputs, inputs, cells):
             num_picks.append(n_)
 
     for ns, i in zip(inputs[:n_inputs], num_picks):
-        cells[i].inputs_list.append(ns)
+        cells[i]._inputs_list.append(ns)
 
     return num_picks
 
