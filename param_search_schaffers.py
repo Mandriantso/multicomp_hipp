@@ -1,3 +1,6 @@
+'''
+    Script to search the best parameters for input amplitude and w_sca weight
+'''
 import os
 import sys
 import time
@@ -5,10 +8,11 @@ from datetime import datetime
 import argparse
 
 from neuron import h
-from Cells.Cells import PyramidalCell, BasketCell, OLMCell, SchafferCollateral
+from Cells.Cells import PyramidalCell, BasketCell, OLMCell, SchafferCollateral_2
 from Scripts.Stimulation import *
 from Scripts.Network import *
-from Scripts.myplot import save_raster, save_FR, save_specgram
+from Scripts.myplot import save_raster, save_FR, save_specgram, plot_watermark
+from Scripts.utilities import *
 from Scripts.utilities import *
 from Scripts.anatomy import *
 from Scripts.input import *
@@ -47,389 +51,41 @@ def _set_v_init():
                 for seg in sec:
                     seg.v = settings.sim_v_init + r  
 
-
-# Parse arguments
-parser = argparse.ArgumentParser(description='Optimization of Schaffer -> PYR weights')
-
-parser.add_argument('-p', '--parameters',
-                    nargs='?',
-                    metavar='-p',
-                    type=str,
-                    default=os.path.join('configs', 'parameters_no_stim.json'),
-                    help='Parameters file (json format)')
-
-parser.add_argument('-sd', '--save_dir',
-                    nargs='?',
-                    metavar='-sd',
-                    type=str,
-                    default='new_param_search_paper_good_OLM/SCA_weights_constrained',
-                    help='Destination directory to save the results')
-
-args = parser.parse_args()
-filename = args.parameters
-resdir = args.save_dir
-
-try:
-    data = parameters.load(filename)
-    print('Using "{0}"'.format(filename))
-except Exception as e:
-    print(e)
-    print('Using "parameters_no_stim.json"')
-    data = parameters._data
-parameters.dump(data) # TODO: update file after changing weights ?
-print()
-
-# Settings initialization
-settings.init(data)
-
-# for watermaks on figures -> reproducibility
-git_kwargs = {'timestamp': time.ctime(),
-              'branch': get_git_revision_branch(), 
-              'hash': get_git_revision_hash(),
-              'script_name': os.path.basename(__file__),
-              'config_file': filename}
-
-RNG = np.random.default_rng()
-
-# initialize MPI for parallel computing
-h.nrnmpi_init()
-pc = h.ParallelContext()
-rank = pc.id()
-
-# factor by which to multiply E -> I and I -> E weights
-# K_factors = [0.1, 0.25, 0.33, 0.5, 0.6, 0.75] 
-# K_factors = [2.25, 2.33, 2.5, 2.6, 2.75, 3.] 
-K_factors = [0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0] 
-# k_x = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.]
-
-if rank == 0:
-    # Create directories
-    print('\n[00] Making directories...')
-    print('-'*32)
-    sys.stdout.flush()
-
-dirs = {}
-dirs['results'] = resdir
-
-if not os.path.isdir(dirs['results']) and rank == 0:
-    print('[+] Creating directory', dirs['results'])
-    sys.stdout.flush()
-    os.makedirs(dirs['results'])
-
-# Creating neuron populations
-if rank == 0:
-    print('\n[10] Making the neuron populations...')
-    print('-'*32)
-
-    print('[+] Loading coordinates')
-    sys.stdout.flush()
-
-
-# retrieve coordinates
-coordinates_dir = 'positions_correct_layers_thickness'
-ca1_coordinates = os.path.join(coordinates_dir, 'ca1')
-ca3_coordinates = os.path.join(coordinates_dir, 'ca3')
-
-ca1_pyr_coords = np.load(os.path.join(ca1_coordinates, 'pyr_coordinates.npy'))
-ca1_bc_coords = np.load(os.path.join(ca1_coordinates, 'bc_coordinates.npy'))
-ca1_olm_coords = np.load(os.path.join(ca1_coordinates, 'olm_coordinates.npy'))
-
-ca3_schaffer_coords = np.load(os.path.join(ca3_coordinates, 'pyr_coordinates.npy'))
-
-# retrieve schaffer collaterals trajectories
-ca3_schaffer_trajectories = np.load(os.path.join(ca3_coordinates, 'schaffer_trajectories_all_coords.npy'), allow_pickle=True)
-
-# create cells
-n_pyr_ca1 = settings.N_CA1[0]
-n_bc_ca1 = settings.N_CA1[1]
-n_olm_ca1 = settings.N_CA1[2]
-
-n_cells_ca1 = n_pyr_ca1 + n_bc_ca1 + n_olm_ca1 
-
-n_schaffer_ca3 = settings.N_CA3[0]
-
-n_cells = n_cells_ca1 + n_schaffer_ca3
-
-# set gids
-gids_pyr_soma = [2*n for n in range(pc.id(), n_pyr_ca1, pc.nhost())]
-gids_pyr_axon = [2*n + 1 for n in range(pc.id(), n_pyr_ca1, pc.nhost())]
-
-gids_interneurons = list(range(pc.id() + 2*n_pyr_ca1, n_cells_ca1+n_pyr_ca1, pc.nhost()))
-
-gids_bc = [gid for gid in gids_interneurons if gid < 2*n_pyr_ca1 + n_bc_ca1]
-
-gids_olm = [gid for gid in gids_interneurons if gid >= 2*n_pyr_ca1 + n_bc_ca1]
-
-gids_sca_first_node = [n_cells_ca1+n_pyr_ca1+2*n for n in range(pc.id(), n_schaffer_ca3, pc.nhost())]
-gids_sca_last_node = [n_cells_ca1+n_pyr_ca1+2*n + 1 for n in range(pc.id(), n_schaffer_ca3, pc.nhost())]
-
-# associate gid to processor
-for gid in gids_pyr_soma:
-    pc.set_gid2node(gid, pc.id())
-
-for gid in gids_pyr_axon:
-    pc.set_gid2node(gid, pc.id())
-
-for gid in gids_interneurons:
-    pc.set_gid2node(gid, pc.id())
-
-for gid in gids_sca_first_node:
-    pc.set_gid2node(gid, pc.id())
-
-for gid in gids_sca_last_node:
-    pc.set_gid2node(gid, pc.id())
-
-if rank == 0:  
-    print('[+] Creating cells')
-    sys.stdout.flush()
-
-ca1_pyr_cells = []
-for gid_soma, gid_axon in zip(gids_pyr_soma, gids_pyr_axon):
-    cell_ = PyramidalCell(gid_soma=gid_soma, gid_axon=gid_axon, 
-                          x=ca1_pyr_coords[int(gid_soma/2), 0], 
-                          y=ca1_pyr_coords[int(gid_soma/2), 1],
-                          theta=ca1_pyr_coords[int(gid_soma/2), 2],
-                          x_intrinsic=ca1_pyr_coords[int(gid_soma/2), 3], 
-                          y_intrinsic=ca1_pyr_coords[int(gid_soma/2), 4],
-                          x_flat=ca1_pyr_coords[int(gid_soma/2), 5], 
-                          y_flat=ca1_pyr_coords[int(gid_soma/2), 6])
-    ca1_pyr_cells.append(cell_)
-    # associate gid to spike_detector
-    pc.cell(gid_soma, cell_._spike_detector)
-    pc.cell(gid_axon, cell_._spike_detector_axon)
-
-ca1_bc_cells = []
-for gid in gids_bc:
-    cell_ = BasketCell(gid=gid, 
-                       x=ca1_bc_coords[gid - 2*n_pyr_ca1, 0], y=ca1_bc_coords[gid - 2*n_pyr_ca1, 1], theta=ca1_bc_coords[gid - 2*n_pyr_ca1, 2],
-                       x_intrinsic=ca1_bc_coords[gid - 2*n_pyr_ca1, 3], y_intrinsic=ca1_bc_coords[gid - 2*n_pyr_ca1, 4],
-                       x_flat=ca1_bc_coords[gid - 2*n_pyr_ca1, 5], y_flat=ca1_bc_coords[gid - 2*n_pyr_ca1, 6])
-    ca1_bc_cells.append(cell_)
-    # associate gid to spike_detector
-    pc.cell(gid, cell_._spike_detector)
-
-ca1_olm_cells = []
-for gid in gids_olm:
-    cell_ = OLMCell(gid=gid, 
-                    x=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 0], y=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 1], theta=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 2],
-                    x_intrinsic=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 3], y_intrinsic=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 4],
-                    x_flat=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 5], y_flat=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 6])
-    ca1_olm_cells.append(cell_)
-    # associate gid to spike_detector
-    pc.cell(gid, cell_._spike_detector)
-
-ca1_cells = ca1_pyr_cells + ca1_bc_cells + ca1_olm_cells
-
-ca3_schaffer_collaterals = []
-for gid_first_node, gid_last_node in zip(gids_sca_first_node, gids_sca_last_node):
-    cell_ = SchafferCollateral(gid=gid_first_node, gid_last_node=gid_last_node, axon_trajectory=ca3_schaffer_trajectories[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
-                               x=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 0], y=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 1],
-                               x_intrinsic=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 3], y_intrinsic=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 4],
-                               x_flat=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 5], y_flat=ca3_schaffer_coords[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2), 6])
-    ca3_schaffer_collaterals.append(cell_)
-    # associate gid to spike_detector
-    pc.cell(gid_first_node, cell_._spike_detector)
-    pc.cell(gid_last_node, cell_._spike_detector_last_node)
-
-all_cells = ca1_cells + ca3_schaffer_collaterals
-
-# adding noise
-if rank == 0:  
-    print('[+] Adding noise current...')
-    sys.stdout.flush()
-
-i_noise = h.Vector()
-
-for cell_ in ca1_cells:
-    for sec in cell_.all:
-        sec.insert("Inoise")
-        sec.myseed_Inoise = RNG.integers(0, 1000000000000000, 1) #seed_noise #settings.seed_noise
-        if "PyramidalCell" in str(cell_):
-            sec.sigma_Inoise = settings.sigma_CA1[0]
-            sec.mean_Inoise = settings.mean_CA1[0]
-            sec.tau_Inoise = settings.tau_CA1[0]
-            sec.inoise_Inoise = -0.0
-            i_noise.record(cell_.soma(0.5)._ref_inoise_Inoise)
-        elif "OLMCell" in str(cell_):
-            sec.sigma_Inoise = settings.sigma_CA1[2]
-            sec.mean_Inoise = settings.mean_CA1[2]
-            sec.tau_Inoise = settings.tau_CA1[2]
-            sec.inoise_Inoise = -0.0
-        else:
-            sec.sigma_Inoise = settings.sigma_CA1[1]
-            sec.mean_Inoise = settings.mean_CA1[1]
-            sec.tau_Inoise = settings.tau_CA1[1]
-            sec.inoise_Inoise = -0.0
-
-    # remove noise in axon
-    if hasattr(cell_, "axonal"):
-        mt = h.MechanismType(0)
-        mt.select('Inoise')
-        for sec in cell_.axonal:
-            mt.remove(sec=sec)
-
-    
-# set connections
-if rank == 0:  
-    print('\n[11] Setting connections...')
-    print('-'*32)
-
-    print('[+] Finding all postsynaptic and presynaptic cells...')
-    sys.stdout.flush()
-
-# set connection matrix
-conn_mat = np.zeros((n_cells, n_cells))
-# print('shape connection matrix : ', np.shape(conn_mat))
-
-for i in range(n_pyr_ca1):
-    # for j in range(n_pyr_ca1):
-    #     dist_value = np.sqrt((ca1_pyr_coordinates_flat[i, 0] - ca1_pyr_coordinates_flat[j, 0])**2 + (ca1_pyr_coordinates_flat[i, 1] - ca1_pyr_coordinates_flat[j, 1])**2)
-    #     if settings.syn_dist_CA1[0] >= dist_value and i != j and conn_mat[i, :n_pyr_ca1].sum(axis=0) < 1 and conn_mat[:n_pyr_ca1, j].sum(axis=0) < 1:
-    #         conn_mat[i, j] = 1
-
-    for j in range(n_bc_ca1):
-        dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_bc_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_bc_coords[j, 6])**2)
-        if settings.syn_dist_CA1[0] >= dist_value:
-            conn_mat[i, j + n_pyr_ca1] = 1
-
-    for j in range(n_olm_ca1):
-        dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_olm_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_olm_coords[j, 6])**2)
-        if settings.syn_dist_CA1[0] >= dist_value:
-            conn_mat[i, j + n_pyr_ca1 + n_bc_ca1] = 1
-
-for i in range(n_bc_ca1):
-    for j in range(n_pyr_ca1):
-        dist_value = np.sqrt((ca1_bc_coords[i, 5] - ca1_pyr_coords[j, 5])**2 + (ca1_bc_coords[i, 6] - ca1_pyr_coords[j, 6])**2)
-        if settings.syn_dist_CA1[1] >= dist_value and conn_mat[n_pyr_ca1:n_pyr_ca1+n_bc_ca1, j].sum(axis=0) < 1: # only one conn. from BC to Pyr
-            conn_mat[i + n_pyr_ca1, j] = 1
-
-    for j in range(n_bc_ca1):
-        dist_value = np.sqrt((ca1_bc_coords[i, 5] - ca1_bc_coords[j, 5])**2 + (ca1_bc_coords[i, 6] - ca1_bc_coords[j, 6])**2)
-        if settings.syn_dist_CA1[1] >= dist_value and i != j:
-            conn_mat[i + n_pyr_ca1, j + n_pyr_ca1] = 1
-
-for i in range(n_olm_ca1):
-    for j in range(n_pyr_ca1):
-        dist_value = np.sqrt((ca1_olm_coords[i, 5] - ca1_pyr_coords[j, 5])**2 + (ca1_olm_coords[i, 6] - ca1_pyr_coords[j, 6])**2)
-        if settings.syn_dist_CA1[2] >= dist_value:
-            conn_mat[i + n_pyr_ca1 + n_bc_ca1, j] = 1
-
-for i in range(n_schaffer_ca3):
-    for j in range(n_pyr_ca1):
-        dist_value = np.sqrt((ca3_schaffer_trajectories[i][-1, 5] - ca1_pyr_coords[j, 5])**2 + (ca3_schaffer_trajectories[i][-1, 6] - ca1_pyr_coords[j, 6])**2)
-        if settings.syn_dist_CA3_CA1[0] >= dist_value and conn_mat[n_cells_ca1: , j].sum(axis=0) < 3:
-            conn_mat[i + n_cells_ca1, j] = 1
-
-# fill postsynaptic and presynaptic neurons
-for i in range(n_pyr_ca1):
-    for j in range(n_pyr_ca1):
-        if conn_mat[i, j] > 0 and pc.gid_exists(2*i):
-            pc.gid2cell(2*i)._postsyn_list.append(2*j)
-        if conn_mat[i, j] > 0 and pc.gid_exists(2*j):
-            pc.gid2cell(2*j)._presyn_list.append(2*i)
-    
-    for j in range(n_pyr_ca1, n_pyr_ca1 + n_bc_ca1):
-        if conn_mat[i, j] > 0 and pc.gid_exists(2*i):
-            pc.gid2cell(2*i)._postsyn_list.append(n_pyr_ca1 + j)
-        if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + j):
-            pc.gid2cell(n_pyr_ca1 + j)._presyn_list.append(2*i)
-
-    for j in range(n_pyr_ca1 + n_bc_ca1, n_cells_ca1):
-        if conn_mat[i, j] > 0 and pc.gid_exists(2*i):
-            pc.gid2cell(2*i)._postsyn_list.append(n_pyr_ca1 + j)
-        if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + j):
-            pc.gid2cell(n_pyr_ca1 + j)._presyn_list.append(2*i)
-
-
-for i in range(n_pyr_ca1, n_pyr_ca1 + n_bc_ca1):
-    for j in range(n_pyr_ca1):
-        if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + i):
-            pc.gid2cell(n_pyr_ca1 + i)._postsyn_list.append(2*j)
-        if conn_mat[i, j] > 0 and pc.gid_exists(2*j):
-            pc.gid2cell(2*j)._presyn_list.append(n_pyr_ca1 + i)
-    
-    for j in range(n_pyr_ca1, n_pyr_ca1 + n_bc_ca1):
-        if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + i):
-            pc.gid2cell(n_pyr_ca1 + i)._postsyn_list.append(n_pyr_ca1 + j)
-        if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + j):
-            pc.gid2cell(n_pyr_ca1 + j)._presyn_list.append(n_pyr_ca1 + i)
-    
-for i in range(n_pyr_ca1 + n_bc_ca1, n_cells_ca1):
-    for j in range(n_pyr_ca1):
-        if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + i):
-            pc.gid2cell(n_pyr_ca1 + i)._postsyn_list.append(2*j)
-        if conn_mat[i, j] > 0 and pc.gid_exists(2*j):
-            pc.gid2cell(2*j)._presyn_list.append(n_pyr_ca1 + i)
-
-# Schaffer -> PYR connections
-for i in range(n_schaffer_ca3):
-    for j in range(n_pyr_ca1):
-        if conn_mat[n_cells_ca1 + i, j] > 0 and pc.gid_exists(n_cells_ca1 + n_pyr_ca1 + 2*i + 1): # connect to last node of schaffer collaterals
-            pc.gid2cell(n_cells_ca1 + n_pyr_ca1 + 2*i + 1)._postsyn_list.append(2*j)
-        if conn_mat[n_cells_ca1 + i, j] > 0 and pc.gid_exists(2*j):
-            pc.gid2cell(2*j)._presyn_list.append(n_cells_ca1 + n_pyr_ca1 + 2*i + 1)
-
-if rank == 0:
-    print('[+] Found all postsynatpic cells')
-    sys.stdout.flush()
-
-# wait for all processors to reach this point
-pc.barrier()
-
-if rank == 0:
-    print('\n[01] Starting iterations...')
-    print('-'*32)
-    sys.stdout.flush()
-
-# amp = 0.02
-
-dirs['amp_dir'] = os.path.join(dirs['results'], "ramp")# "{}nA".format(amp))
-if not os.path.isdir(dirs['amp_dir']) and rank == 0:
-    print('[+] Creating directory', dirs['amp_dir'])
-    sys.stdout.flush()
-    os.makedirs(dirs['amp_dir'])
-
-for k in K_factors: # for SCA -> PYR weights
+# start iteration here
+def make_saving_directories(amp, k_sca):
     if rank == 0:
-        print(f'\n[+]    k = {k}')
-        print('-'*32)
-        sys.stdout.flush()
+        dirs['amp_dir'] = os.path.join(dirs['results'], "{}_nA".format(amp))
+        if not os.path.isdir(dirs['amp_dir']) and rank == 0:
+            print('[+] Creating directory', dirs['amp_dir'])
+            sys.stdout.flush()
+            os.makedirs(dirs['amp_dir'])
 
-    dirs['save_dir'] = os.path.join(dirs['amp_dir'], "w_ScaE_{}".format(k))
-    if not os.path.isdir(dirs['save_dir']) and rank == 0:
-        print('[+] Creating directory', dirs['save_dir'])
-        sys.stdout.flush()
-        os.makedirs(dirs['save_dir'])
+        dirs['save_dir'] = os.path.join(dirs['amp_dir'], "w_ScaE_{}".format(k_sca))
+        if not os.path.isdir(dirs['save_dir']) and rank == 0:
+            print('[+] Creating directory', dirs['save_dir'])
+            sys.stdout.flush()
+            os.makedirs(dirs['save_dir'])
+
+        dirs['data'] = os.path.join(dirs['save_dir'], 'data')
+        if not os.path.isdir(dirs['data']) and rank == 0:
+            print('[+] Creating directory', dirs['data'])
+            sys.stdout.flush()
+            os.makedirs(dirs['data'])
+
+        dirs['coords'] = os.path.join(dirs['data'], 'coordinates')
+        if not os.path.isdir(dirs['coords']) and rank == 0:
+            print('[+] Creating directory', dirs['coords'])
+            sys.stdout.flush()
+            os.makedirs(dirs['coords'])
+
+        dirs['figures'] = os.path.join(dirs['save_dir'], 'figures')
+        if not os.path.isdir(dirs['figures']) and rank == 0:
+            print('[+] Creating directory', dirs['figures'])
+            sys.stdout.flush()
+            os.makedirs(dirs['figures'])
 
 
-    dirs['data'] = os.path.join(dirs['save_dir'], 'data')
-    if not os.path.isdir(dirs['data']) and rank == 0:
-        print('[+] Creating directory', dirs['data'])
-        sys.stdout.flush()
-        os.makedirs(dirs['data'])
-
-    dirs['coords'] = os.path.join(dirs['data'], 'coordinates')
-    if not os.path.isdir(dirs['coords']) and rank == 0:
-        print('[+] Creating directory', dirs['coords'])
-        sys.stdout.flush()
-        os.makedirs(dirs['coords'])
-
-    dirs['figures'] = os.path.join(dirs['save_dir'], 'figures')
-    if not os.path.isdir(dirs['figures']) and rank == 0:
-        print('[+] Creating directory', dirs['figures'])
-        sys.stdout.flush()
-        os.makedirs(dirs['figures'])
-
-    if rank == 0:
-        print('[+] Saving connection matrix')
-        sys.stdout.flush()
-        np.save(os.path.join(dirs['data'], "connection_matrix.npy"), conn_mat, allow_pickle=True)
-
-    #starting from here
-    if rank == 0:
-        print('[+] Set connection weight...')
-        sys.stdout.flush()
-
+def set_network_connections(k_sca):
     # set connections to Pyramidal cells
     for cell_ in ca1_pyr_cells: # to | from
         for pregid in cell_._presyn_list:
@@ -451,7 +107,7 @@ for k in K_factors: # for SCA -> PYR weights
                 mt_.select("Exp2Syn")
                 pp = mt_.pp_begin(sec=target_sec)
                 nc_ = pc.gid_connect(pregid, pp)
-                nc_.weight[0] = settings.w_CA1[1][0]
+                nc_.weight[0] = settings.w_CA1[1][0] 
                 nc_.threshold = settings.syn_threshold
                 nc_.delay = settings.syn_delay
                 cell_._ncs.append(nc_)
@@ -473,7 +129,7 @@ for k in K_factors: # for SCA -> PYR weights
                 mt_.select("Exp2Syn")
                 pp = mt_.pp_begin(sec=target_sec)
                 nc_ = pc.gid_connect(pregid, pp)
-                nc_.weight[0] = settings.w_CA3_CA1[0] * k
+                nc_.weight[0] = settings.w_CA3_CA1[0]*k_sca 
                 nc_.threshold = settings.syn_threshold
                 nc_.delay = settings.syn_delay
                 cell_._ncs.append(nc_)
@@ -514,95 +170,50 @@ for k in K_factors: # for SCA -> PYR weights
                 mt_.select("Exp2Syn")
                 pp = mt_.pp_begin(sec=target_sec)
                 nc_ = pc.gid_connect(pregid, pp)
-                nc_.weight[0] = settings.w_CA1[0][2] 
+                nc_.weight[0] = settings.w_CA1[0][2] # try with same as BC
                 nc_.threshold = settings.syn_threshold
                 nc_.delay = settings.syn_delay
                 cell_._ncs.append(nc_)
 
-    # create inputs
-    # inputs are set as intracellular ramp current to soma of pyramidal cells
+
+def create_input(amp, duration, delay):
+    # create input
+    for cell_ in ca3_schaffers:
+        r_osc = random.uniform(0, 50)
+        target_sec = cell_.soma
+        input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, duration, 6, amp, noisy=False)
+        cell_._inputs_vector.record(input_._ref_i)
+
+
+def run_simulation(amp, k_sca, duration):
+    # duration = 100
+    delay = 10
+
+    make_saving_directories(amp, k_sca)
+
+    
     if rank == 0:
-        print('[+] Connecting cells done')
+        print(f'[+] Connecting cells in subworld {rank_subworld+1}/{pc.nhost_bbs()}')
+        sys.stdout.flush()
+
+    set_network_connections(k_sca)
+ 
+    pc.barrier()
+
+    if rank == 0:
+        print(f'[+] Connecting cells done in subworld {rank_subworld+1}/{pc.nhost_bbs()}')
         print('\n[20] Setting the inputs...')
         sys.stdout.flush()
 
-    # osc_amp = h.Vector()
-    # setting oscillatory input current
-    amp = 0.02
-    delay = 1000
+    if rank == 0:
+        print('[+] Oscillatory input')
+        sys.stdout.flush()
 
-    for cell_ in ca3_schaffer_collaterals:
-        r_osc = random.uniform(0, 50)
-        target_sec = cell_.soma
-        input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, settings.duration, 6, amp, noisy=False)
-        cell_._inputs_vector.record(input_._ref_i)
-    # osc_amp.record(input_._ref_i)
-
-    # setting current vectors
-    # VecT = h.Vector([0, settings.duration])
-    # VecStim = h.Vector([0., 1.])
-    # stim_amp = h.Vector()
-
-    # for cell_ in ca3_schaffer_collaterals:
-    #     stim_ = h.IClamp(cell_.soma(0.5))
-    #     stim_.delay = 0
-    #     stim_.dur = 1e9
-
-    #     VecStim.play(stim_._ref_amp, VecT, 1)
-    #     cell_._inputs_list.append(stim_)
-
-    #     stim_amp.record(stim_._ref_i) # last stim_
-
-    # TODO : retrieve from parameters file
-    # create inputs from CA3 Schaffer collaterals
-    # set netstim params
-    # ENUM = 50 # number of cells to simulate
-
-    # ISI = 125    # interspike interval
-    # NUM = 1000   # max number of spikes
-    # DELSTART = 10    # delay until first spike
-    # NOISE = 0.0  # noise for variaty in spiking
-
-
-    # TSTOP = DELSTART + 2.5*125
-
-    # create netstims
-    # ca3_schaffers = [h.NetStim() for _ in range(ENUM)]
-
-    # all_random_streams = []
-
-    # set netstim parameters
-    # for i, ns in enumerate(ca3_schaffers):
-    #     ns.interval = ISI
-    #     ns.number = NUM
-    #     ns.start = DELSTART + random.randint(0, 80)
-    #     ns.noise = NOISE
-    #     # specify the (i, 0, 0)th random stream
-    #     ns.noiseFromRandom123(i, 0, 0)
-
-    # print('\n[21] Connecting inputs...')
-    # print('-'*32)
-
-    # # get inputs
-    # id_pyr_inputs = get_inputs(50, ca3_schaffers, ca1_pyr_cells)
-    # id_bc_inputs = get_inputs(3, ca3_schaffers, ca1_bc_cells)
-
-    # External inputs
-    # CA3 Schaffer collaterals
-    # for cell in ca1_pyr_cells:
-    #     for input_cell in cell._inputs_list:
-    #         target_secs = list(cell.rad_list)
-    #         target_sec = random.choice(target_secs)
-    #         connect_inputs(input_cell, cell, cell.radTmed, 0.03, 1)
-
-    # for cell in ca1_bc_cells:
-    #     for input_cell in cell.inputs_list:
-    #         target_secs = list(cell.sr_med)
-    #         target_sec = random.choice(target_secs)
-    #         connect_inputs(input_cell, cell, target_sec, 0.025, 1)
+    create_input(amp, duration, delay)
+    pc.barrier()
 
     if rank == 0:
-        print('[+] Inputs done')
+        print(f'[+] Inputs done in subworld {rank_subworld+1}/{pc.nhost_bbs()}')
         print('\n[30] Simulation...')
         print('-'*32)
 
@@ -615,7 +226,7 @@ for k in K_factors: # for SCA -> PYR weights
     # set finitializehandler
     fih = h.FInitializeHandler(1, _set_v_init) # random initialization of Vm
 
-    h.tstop = settings.duration
+    h.tstop = duration #settings.duration
     h.celsius = settings.sim_celsius
 
     pc.set_maxstep(10)
@@ -627,7 +238,8 @@ for k in K_factors: # for SCA -> PYR weights
     h.stdinit()
     h.cvode_active(0)
     start_time = time.time()
-    pc.psolve(settings.duration)
+    pc.psolve(duration)
+    # pc.psolve(settings.duration)
     end_time = time.time()
 
     hours, rem = divmod(end_time - start_time, 3600)
@@ -642,29 +254,42 @@ for k in K_factors: # for SCA -> PYR weights
         sys.stdout.flush()
 
     # retrieve results on local processor
+    # membrane potential of schaffer nodes
+    local_data_nodes_Vm = {}
+    for cell_ in ca3_schaffers:
+        local_data_nodes_Vm.update(cell_.Vm_nodes)
+    # [cell_.Vm_nodes for cell_ in ca3_schaffers]
+    all_data_nodes_Vm = pc.py_gather(local_data_nodes_Vm, 0)
+
+    # intracellular current of schaffer nodes
+    local_data_nodes_i = {}
+    for cell_ in ca3_schaffers:
+        local_data_nodes_i.update(cell_.i_nodes)
+    all_data_nodes_i = pc.py_gather(local_data_nodes_i, 0)
+
     # local membrane potential
     local_potential_pyr = {cell_._gid: np.array(cell_.soma_v) for cell_ in ca1_pyr_cells}
     local_potential_bc = {cell_._gid: np.array(cell_.soma_v) for cell_ in ca1_bc_cells}
     local_potential_olm = {cell_._gid: np.array(cell_.soma_v) for cell_ in ca1_olm_cells}
-    local_potential_sca = {cell_._gid: np.array(cell_.soma_v) for cell_ in ca3_schaffer_collaterals}
-    local_potential_sca_last = {cell_._gid: np.array(cell_.last_node_v) for cell_ in ca3_schaffer_collaterals}
+    local_potential_sca = {cell_._gid: np.array(cell_.soma_v) for cell_ in ca3_schaffers}
+    local_potential_sca_last = {cell_._gid: np.array(cell_.last_node_v) for cell_ in ca3_schaffers}
 
     # local intracellular_current
     local_current_pyr = {cell_._gid: np.array(cell_.soma_i) for cell_ in ca1_pyr_cells}
     local_current_bc = {cell_._gid: np.array(cell_.soma_i) for cell_ in ca1_bc_cells}
     local_current_olm = {cell_._gid: np.array(cell_.soma_i) for cell_ in ca1_olm_cells}
-    local_current_sca = {cell_._gid: np.array(cell_.soma_i) for cell_ in ca3_schaffer_collaterals}
-    local_current_sca_last = {cell_._gid: np.array(cell_.last_node_i) for cell_ in ca3_schaffer_collaterals}
+    local_current_sca = {cell_._gid: np.array(cell_.soma_i) for cell_ in ca3_schaffers}
+    local_current_sca_last = {cell_._gid: np.array(cell_.last_node_i) for cell_ in ca3_schaffers}
 
     # local spike times
     local_spikes_pyr = {cell_._gid: list(cell_.spike_times) for cell_ in ca1_pyr_cells}
     local_spikes_bc = {cell_._gid: list(cell_.spike_times) for cell_ in ca1_bc_cells}
     local_spikes_olm = {cell_._gid: list(cell_.spike_times) for cell_ in ca1_olm_cells}
-    local_spikes_sca = {cell_._gid: list(cell_.spike_times) for cell_ in ca3_schaffer_collaterals}
-    local_spikes_sca_last = {cell_._gid: list(cell_.spike_times_last_node) for cell_ in ca3_schaffer_collaterals}
+    local_spikes_sca = {cell_._gid: list(cell_.spike_times) for cell_ in ca3_schaffers}
+    local_spikes_sca_last = {cell_._gid: list(cell_.spike_times_last_node) for cell_ in ca3_schaffers}
 
     # local inputs
-    local_inputs_sca = {cell_._gid: list(cell_._inputs_vector) for cell_ in ca3_schaffer_collaterals}
+    local_inputs_sca = {cell_._gid: list(cell_._inputs_vector) for cell_ in ca3_schaffers}
 
     # send results to all processors
     all_potential_pyr = pc.py_alltoall([local_potential_pyr] + [None] * (pc.nhost() - 1))
@@ -689,6 +314,16 @@ for k in K_factors: # for SCA -> PYR weights
 
     if rank == 0:
         # combine the data from the various processors
+        merged_data_nodes_Vm = {}
+        for proc_data_list in all_data_nodes_Vm:
+            merged_data_nodes_Vm.update(proc_data_list)
+        # merged_data_nodes_Vm['time'] = t_vec
+
+        merged_data_nodes_i = {}
+        for proc_data_list in all_data_nodes_i:
+            merged_data_nodes_i.update(proc_data_list)
+        # merged_data_nodes_i['time'] = t_vec
+
         potential_pyr = {}
         potential_bc = {}
         potential_olm = {}
@@ -741,7 +376,7 @@ for k in K_factors: # for SCA -> PYR weights
 
         for data in all_spikes_pyr:
             spikes_pyr.update(data)
-            
+
         for data in all_spikes_bc:
             spikes_bc.update(data)
 
@@ -788,6 +423,7 @@ for k in K_factors: # for SCA -> PYR weights
             id_spikes_sca_last.extend([n_cells_ca1 + int(key-n_pyr_ca1-n_cells_ca1)/2] * len(value))
             t_spikes_sca_last.extend(value)
 
+        # t_vec, merged_data_nodes_Vm, merged_data_nodes_i, potential_pyr, potential_bc, potential_olm, potential_sca, potential_sca_last, current_pyr, current_bc, current_olm, current_sca, current_sca_last, id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca, id_spikes_sca_last, t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca, t_spikes_sca_last, inputs_sca = pc.pyret()
         # spectrogram
         cmesh_list = []
         vlow = []
@@ -798,7 +434,7 @@ for k in K_factors: # for SCA -> PYR weights
 
         window_size = 1 #ms
 
-        window_size_Pxx = 150
+        window_size_Pxx = 150 #1000
         window_width_Pxx = int(window_size_Pxx * (1/window_size))
         overlap_Pxx = 0.9
         window_overlap_Pxx = int(window_width_Pxx*overlap_Pxx)
@@ -807,17 +443,17 @@ for k in K_factors: # for SCA -> PYR weights
         norm_bc = colors.Normalize(vmin=vmin, vmax=vmax)
         norm_olm = colors.Normalize(vmin=vmin, vmax=vmax)
         norm_pyr = colors.Normalize(vmin=vmin, vmax=vmax)
+        norm_sca = colors.Normalize(vmin=vmin, vmax=vmax)
 
         specgram_kwargs = { 'return_onesided' : True,
                             'scaling' : 'density',
                             'mode' : 'magnitude' }
 
         # compute firing rates
-        t_FR_pyr, count_pyr, FR_pyr, fs_n = compute_FR(np.array(t_spikes_pyr)*1e-3, n_pyr_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
-        t_FR_bc, count_bc, FR_bc, _ = compute_FR(np.array(t_spikes_bc)*1e-3, n_bc_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
-        t_FR_olm, count_olm, FR_olm, _ = compute_FR(np.array(t_spikes_olm)*1e-3, n_olm_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
-        t_FR_sca, count_sca, FR_sca, _ = compute_FR(np.array(t_spikes_sca)*1e-3, n_schaffer_ca3, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
-        t_FR_sca_last, count_sca_last, FR_sca_last, _ = compute_FR(np.array(t_spikes_sca_last)*1e-3, n_schaffer_ca3, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
+        t_FR_pyr, count_pyr, FR_pyr, fs_n = compute_FR(np.array(t_spikes_pyr)*1e-3, n_pyr_ca1, duration*1e-3, winsize_fr*1e-3, overlap_fr)
+        t_FR_bc, count_bc, FR_bc, _ = compute_FR(np.array(t_spikes_bc)*1e-3, n_bc_ca1, duration*1e-3, winsize_fr*1e-3, overlap_fr)
+        t_FR_olm, count_olm, FR_olm, _ = compute_FR(np.array(t_spikes_olm)*1e-3, n_olm_ca1, duration*1e-3, winsize_fr*1e-3, overlap_fr)
+        t_FR_sca, count_sca, FR_sca, _ = compute_FR(np.array(t_spikes_sca_last)*1e-3, n_schaffers_ca3, duration*1e-3, winsize_fr*1e-3, overlap_fr)
 
         with open(os.path.join(dirs["save_dir"], "output.txt"), "w") as f:
             f.write("Git parameters\n")
@@ -828,15 +464,21 @@ for k in K_factors: # for SCA -> PYR weights
             f.write("\n\nSimulation parameters\n")
             f.write("-------------------------\n")
             f.write("remark :\n")
-            f.write("J'ai donc rajouté une contrainte pour avoir max 3 inputs des schaffers")
+            f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
+            f.write("J'ai fait en sorte que les derniers noeuds soient plus ou moins équidistants")
+            f.write(f"Je refais les expériences en mettant w_sca*{k_sca} et offset=50 pour un oscillatoire de 6Hz à {amp}nA")
+            f.write("Collatéraux avec le modèle de McIntyre")
+            f.write("Test sauvegarde des données de chaque noeud")
             f.write("- no Pyr - Pyr connections\n")
+            f.write("- pyr-bc weights used for sca-pyr connections\n")
             f.write("- BC - Pyr constrained to one connection max\n")
+            f.write("- Lamellar coordinates used\n")
             f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
             f.write("BC - Pyr weight : {}\n".format(settings.w_CA1[1][0]))
             f.write("BC - BC weight : {}\n".format(settings.w_CA1[1][1]))
             f.write("OLM - Pyr weight : {}\n".format(settings.w_CA1[2][0]))
             f.write("Pyr - OLM weight : {}\n".format(settings.w_CA1[0][2]))
-            f.write("SCA - Pyr weight : {}\n".format(settings.w_CA3_CA1[0] * k))
+            f.write("\nsca - pyr weight : {}\n".format(settings.w_CA3_CA1[0]*k_sca))
 
             f.write("\n\nSimulation results\n")
             f.write("-------------------------\n")
@@ -845,21 +487,20 @@ for k in K_factors: # for SCA -> PYR weights
             f.write("BC firing rate : {} Hz\n".format(np.mean(FR_bc)))
             f.write("OLM firing rate : {} Hz\n\n".format(np.mean(FR_olm)))
             f.write("Sca firing rate : {} Hz\n\n".format(np.mean(FR_sca)))
-            f.write("Sca last node firing rate : {} Hz\n\n".format(np.mean(FR_sca_last)))
 
             f.write("Mean firing rate over last 1s\n")
             f.write("Pyr firing rate : {} Hz\n".format(np.mean(FR_pyr[-200:])))
             f.write("BC firing rate : {} Hz\n".format(np.mean(FR_bc[-200:])))
             f.write("OLM firing rate : {} Hz\n\n".format(np.mean(FR_olm[-200:])))
             f.write("Sca firing rate : {} Hz\n\n".format(np.mean(FR_sca[-200:])))
-            f.write("Sca last node firing rate : {} Hz\n\n".format(np.mean(FR_sca_last[-200:])))
             f.close()
 
         # compute spectrograms
         fv_pyr, tv_pyr, pspec_pyr = my_specgram2(FR_pyr, fs_n, window_width_Pxx, window_overlap_Pxx, k=2, **specgram_kwargs)
         fv_bc, tv_bc, pspec_bc = my_specgram2(FR_bc, fs_n, window_width_Pxx, window_overlap_Pxx, k=2, **specgram_kwargs)
         fv_olm, tv_olm, pspec_olm = my_specgram2(FR_olm, fs_n, window_width_Pxx, window_overlap_Pxx, k=2, **specgram_kwargs)
-        fv_sca_last, tv_sca_last, pspec_sca_last = my_specgram2(FR_sca_last, fs_n, window_width_Pxx, window_overlap_Pxx, k=2, **specgram_kwargs)
+        fv_sca, tv_sca, pspec_sca = my_specgram2(FR_sca, fs_n, window_width_Pxx, window_overlap_Pxx, k=2, **specgram_kwargs)
+
 
         vlow.append(pspec_pyr.min())
         vhigh.append(pspec_pyr.max())
@@ -867,16 +508,16 @@ for k in K_factors: # for SCA -> PYR weights
         for cmsh in make_flat(cmesh_list):
             cmsh.set_clim(min(vlow), max(vhigh))
 
-        save_specgram(os.path.join(dirs['figures'], 'specgram.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], **git_kwargs)
-        save_specgram(os.path.join(dirs['figures'], 'specgram_0_50.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0, 150], **git_kwargs)
-        save_specgram(os.path.join(dirs['figures'], 'specgram_1s.png'), [tv_pyr, tv_bc, tv_olm, tv_sca_last], [fv_pyr, fv_bc, fv_olm, fv_sca_last], [pspec_pyr, pspec_bc, pspec_olm, pspec_sca_last], ["pyramidal cells", "basket cells", "olm cells", "schaffer collaterals"], xlim=[3, 4], ylim=[0, 150], **git_kwargs)
+        save_specgram(os.path.join(dirs['figures'], 'specgram.png'), [tv_pyr, tv_bc, tv_olm, tv_sca], [fv_pyr, fv_bc, fv_olm, fv_sca], [pspec_pyr, pspec_bc, pspec_olm, pspec_sca], ["pyramidal cells", "basket cells", "olm cells", "schaffer collaterals"], **git_kwargs)
+        save_specgram(os.path.join(dirs['figures'], 'specgram_0_150.png'), [tv_pyr, tv_bc, tv_olm, tv_sca], [fv_pyr, fv_bc, fv_olm, fv_sca], [pspec_pyr, pspec_bc, pspec_olm, pspec_sca], ["pyramidal cells", "basket cells", "olm cells", "schaffer collaterals"], ylim=[0, 150], **git_kwargs)
+        save_specgram(os.path.join(dirs['figures'], 'specgram_1s.png'), [tv_pyr, tv_bc, tv_olm, tv_sca], [fv_pyr, fv_bc, fv_olm, fv_sca], [pspec_pyr, pspec_bc, pspec_olm, pspec_sca], ["pyramidal cells", "basket cells", "olm cells", "schaffer collaterals"], xlim=[3, 4], ylim=[0, 150], **git_kwargs)
 
         # save vectors
         save_membrane_potential(os.path.join(dirs['data'], 'CA1_pyr_Vm.npz'), np.array(t_vec), potential_pyr) 
         save_membrane_potential(os.path.join(dirs['data'], 'CA1_bc_Vm.npz'), np.array(t_vec), potential_bc) 
         save_membrane_potential(os.path.join(dirs['data'], 'CA1_olm_Vm.npz'), np.array(t_vec), potential_olm) 
         save_membrane_potential(os.path.join(dirs['data'], 'CA3_sca_Vm.npz'), np.array(t_vec), potential_sca) 
-        save_membrane_potential(os.path.join(dirs['data'], 'CA3_sca_last_Vm.npz'), np.array(t_vec), potential_sca_last)
+        save_membrane_potential(os.path.join(dirs['data'], 'CA3_sca_last_Vm.npz'), np.array(t_vec), potential_sca_last) 
 
         save_membrane_potential(os.path.join(dirs['data'], 'CA1_pyr_i.npz'), np.array(t_vec), current_pyr) 
         save_membrane_potential(os.path.join(dirs['data'], 'CA1_bc_i.npz'), np.array(t_vec), current_bc) 
@@ -892,40 +533,48 @@ for k in K_factors: # for SCA -> PYR weights
         np.savez(os.path.join(dirs['data'], 'CA3_sca_spikemon.npz'), cell_id=np.array(id_spikes_sca), t_spike=np.array(t_spikes_sca))
         np.savez(os.path.join(dirs['data'], 'CA3_sca_last_spikemon.npz'), cell_id=np.array(id_spikes_sca_last), t_spike=np.array(t_spikes_sca_last))
 
+        save_all_nodes_data(os.path.join(dirs['data'], 'CA3_all_nodes_Vm'), np.array(t_vec), merged_data_nodes_Vm)
+        save_all_nodes_data(os.path.join(dirs['data'], 'CA3_all_nodes_i'), np.array(t_vec), merged_data_nodes_i)
+        # np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_Vm.npz'), **merged_data_nodes_Vm)
+        # np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_i.npz'), **merged_data_nodes_i)
+
+        # stim_loc_pyr = np.abs(ca1_pyr_coords[:,5] - settings.stim_pos[0]).argmin()
+        # stim_loc_bc = np.abs(ca1_bc_coords[:,5] - settings.stim_pos[0]).argmin()
 
         save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
-                    [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
-                    ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
-                    x_lim=[0, settings.duration], **git_kwargs)
+                        [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
+                        ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
+                        x_lim=[0, duration],
+                        stim_time=settings.stim_onset, stim_dur=settings.stim_dur, #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
+                        **git_kwargs)
         
-        save_raster(os.path.join(dirs['figures'], 'raster_plot_4000_5000.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
+        save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
                     ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
-                    x_lim=[settings.duration - 1e3, settings.duration], size_raster=1., **git_kwargs) # last second
+                    x_lim=[duration - 1000, duration], size_raster=1., 
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
+                    **git_kwargs) # last second
 
-        # np.savez(os.path.join(dirs['data'], 'ramping_current.npz'), t=np.array(t_vec), amplitude=np.array(stim_amp))
-            # np.savez(os.path.join(dirs['data'], 'oscillatory_current.npz'), t=np.array(t_vec), amplitude=np.array(osc_amp))
+        # np.savez(os.path.join(dirs['data'], 'theta_inputs.npz'), t=np.array(t_vec), amplitude=np.array(osc_inputs))
         np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
 
-            # fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
-            # ax2.plot(np.array(t_vec), np.array(stim_amp), color='red')
-            # ax2.set_xlabel("Time (ms)")
-            # ax2.set_ylabel("nA")
-            # plt.savefig(os.path.join(dirs['figures'], 'ramping_current.png'), bbox_inches="tight")
-
-            # fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
-            # ax2.plot(np.array(t_vec), np.array(osc_amp), color='red')
-            # ax2.set_xlabel("Time (ms)")
-            # ax2.set_ylabel("nA")
-            # plt.savefig(os.path.join(dirs['figures'], 'oscillatory_current.png'), bbox_inches="tight")
+        # fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
+        # ax2.plot(np.array(t_vec), np.array(osc_amp), color='red')
+        # ax2.set_xlabel("Time (ms)")
+        # ax2.set_ylabel("nA")
+        # plot_watermark(fig2, **git_kwargs)
+        # plt.savefig(os.path.join(dirs['figures'], 'theta_input.png'), bbox_inches="tight")
 
         fig3, ax3 = plt.subplots(1,1,figsize=(9,3))
         ax3.plot(np.array(t_vec), np.array(i_noise), color='black')
         ax3.set_xlabel("Time (ms)")
         ax3.set_ylabel("nA")
+        plot_watermark(fig3, **git_kwargs)
         plt.savefig(os.path.join(dirs['figures'], 'i_noise.png'), bbox_inches="tight")
+        plt.clf()
+        plt.close()
 
-        print("[+] Saving data done !")
+        print(f"[+] Saving data done in subworld {rank_subworld+1}/{pc.nhost_bbs()}!")
         print("[+] Resizing vectors")
         sys.stdout.flush()
 
@@ -934,19 +583,16 @@ for k in K_factors: # for SCA -> PYR weights
 
     # format vectors
     t_vec.resize(0)
-    # stim_amp.resize(0)
-    # osc_amp.resize(0)
     i_noise.resize(0)
 
     for cell_ in ca1_cells:
         cell_.soma_v.resize(0)
         cell_.spike_times.resize(0)
         cell_.soma_i.resize(0)
-        # cell_._spike_detector.resize(0)
         cell_._ncs = []
         cell_._inputs_list = []
 
-    for cell_ in ca3_schaffer_collaterals:
+    for cell_ in ca3_schaffers:
         cell_.soma_v.resize(0)
         cell_.spike_times.resize(0)
         cell_.soma_i.resize(0)
@@ -957,6 +603,9 @@ for k in K_factors: # for SCA -> PYR weights
 
         cell_._inputs_vector.resize(0)
 
+        for i in range(len(cell_.nodes)):
+            cell_.Vm_nodes[f'sca_{cell_._gid}'][f'node_{i}'].resize(0)
+            cell_.i_nodes[f'sca_{cell_._gid}'][f'node_{i}'].resize(0)
 
     pc.barrier()
     # pc.gid_clear()
@@ -964,10 +613,328 @@ for k in K_factors: # for SCA -> PYR weights
     if rank == 0:
         print('Next iteration !')
         sys.stdout.flush()
+        # return (t_vec, merged_data_nodes_Vm, merged_data_nodes_i, potential_pyr, potential_bc, potential_olm, potential_sca, potential_sca_last, current_pyr, current_bc, current_olm, current_sca, current_sca_last,
+        # id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca, id_spikes_sca_last, t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca, t_spikes_sca_last, inputs_sca) 
 
 
-pc.done()
-h.quit()
-sys.exit(0)
+if __name__ == "__main__":
+    duration = 100
 
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='Optimization of Schaffer -> PYR weights')
 
+    parser.add_argument('-p', '--parameters',
+                        nargs='?',
+                        metavar='-p',
+                        type=str,
+                        default=os.path.join('configs', 'parameters_no_stim.json'),
+                        help='Parameters file (json format)')
+
+    parser.add_argument('-sd', '--save_dir',
+                        nargs='?',
+                        metavar='-sd',
+                        type=str,
+                        default='new_param_search_paper_SCA',
+                        help='Destination directory to save the results')
+
+    args = parser.parse_args()
+    filename = args.parameters
+    resdir = args.save_dir
+
+    try:
+        data = parameters.load(filename)
+        # print('Using "{0}"'.format(filename))
+    except Exception as e:
+        # print(e)
+        # print('Using "parameters_no_stim.json"')
+        data = parameters._data
+    # parameters.dump(data) 
+    # print()
+
+    # Settings initialization
+    settings.init(data)
+
+    # for watermaks on figures -> reproducibility
+    git_kwargs = {'timestamp': time.ctime(),
+                'branch': get_git_revision_branch(), 
+                'hash': get_git_revision_hash(),
+                'script_name': os.path.basename(__file__),
+                'config_file': filename}
+
+    RNG = np.random.default_rng()
+
+    k_amps = np.arange(0.02, 0.2, 0.01)
+    k_w_scale = np.arange(1, 3.1, 0.1)
+    len_worlds = 6
+
+    # initialize MPI for parallel computing
+    h.nrnmpi_init()
+    pc = h.ParallelContext()
+
+    if pc.nhost() > 1: # check if serial or parallel run
+        pc.subworlds(len_worlds) # divides the processors into n worlds of len_worlds processors each 
+
+    rank = pc.id()
+    rank_subworld = pc.id_bbs()
+
+    dirs = {}
+    dirs['results'] = resdir
+
+    if not os.path.isdir(dirs['results']) and rank == 0:
+        print('[+] Creating directory', dirs['results'], f'subworld {rank_subworld+1}/{pc.nhost_bbs()}')
+        sys.stdout.flush()
+        os.makedirs(dirs['results'])
+
+    # retrieve coordinates
+    coordinates_dir = 'positions_correct_layers_thickness'
+    ca1_coordinates = os.path.join(coordinates_dir, 'ca1')
+    ca3_coordinates = os.path.join(coordinates_dir, 'ca3')
+
+    ca1_pyr_coords = np.load(os.path.join(ca1_coordinates, 'pyr_coordinates.npy'))
+    ca1_bc_coords = np.load(os.path.join(ca1_coordinates, 'bc_coordinates.npy'))
+    ca1_olm_coords = np.load(os.path.join(ca1_coordinates, 'olm_coordinates.npy'))
+
+    ca3_schaffer_nodes_coordinates = np.load(os.path.join(ca3_coordinates, 'nodes_coordinates_equidistant.npy'), allow_pickle=True)
+    ca3_schaffer_xs_intrinsic = np.load(os.path.join(ca3_coordinates, 'xs_intrinsic_last_node_equidistant.npy'), allow_pickle=True)
+    ca3_schaffer_ys_intrinsic = np.load(os.path.join(ca3_coordinates, 'ys_intrinsic_last_node_equidistant.npy'), allow_pickle=True)
+    ca3_schaffer_xs_flat = np.load(os.path.join(ca3_coordinates, 'xs_flat_last_node_equidistant.npy'), allow_pickle=True)
+    ca3_schaffer_ys_flat = np.load(os.path.join(ca3_coordinates, 'ys_flat_last_node_equidistant.npy'), allow_pickle=True)
+
+    # create cells
+    n_pyr_ca1 = settings.N_CA1[0]
+    n_bc_ca1 = settings.N_CA1[1]
+    n_olm_ca1 = settings.N_CA1[2]
+
+    n_cells_ca1 = n_pyr_ca1 + n_bc_ca1 + n_olm_ca1 
+
+    n_schaffers_ca3 = settings.N_CA3[0]
+
+    n_all_cells = n_cells_ca1 + n_schaffers_ca3
+
+    # set gids
+    gids_pyr_soma = [2*n for n in range(pc.id(), n_pyr_ca1, pc.nhost())]
+    gids_pyr_axon = [2*n + 1 for n in range(pc.id(), n_pyr_ca1, pc.nhost())]
+
+    gids_interneurons = list(range(pc.id() + 2*n_pyr_ca1, n_cells_ca1+n_pyr_ca1, pc.nhost()))
+
+    gids_bc = [gid for gid in gids_interneurons if gid < 2*n_pyr_ca1 + n_bc_ca1]
+
+    gids_olm = [gid for gid in gids_interneurons if gid >= 2*n_pyr_ca1 + n_bc_ca1]
+
+    gids_sca_first_node = [n_cells_ca1+n_pyr_ca1+2*n for n in range(pc.id(), n_schaffers_ca3, pc.nhost())]
+    gids_sca_last_node = [n_cells_ca1+n_pyr_ca1+2*n + 1 for n in range(pc.id(), n_schaffers_ca3, pc.nhost())]
+
+    # associate gid to processor
+    for gid in gids_pyr_soma:
+        pc.set_gid2node(gid, pc.id())
+
+    for gid in gids_pyr_axon:
+        pc.set_gid2node(gid, pc.id())
+
+    for gid in gids_interneurons:
+        pc.set_gid2node(gid, pc.id())
+
+    for gid in gids_sca_first_node:
+        pc.set_gid2node(gid, pc.id())
+
+    for gid in gids_sca_last_node:
+        pc.set_gid2node(gid, pc.id())
+
+    if rank == 0:  
+        print(f'[+] Creating cells in subworld {rank_subworld+1}/{pc.nhost_bbs()}')
+        sys.stdout.flush()
+
+    ca1_pyr_cells = []
+    for gid_soma, gid_axon in zip(gids_pyr_soma, gids_pyr_axon):
+        cell_ = PyramidalCell(gid_soma=gid_soma, gid_axon=gid_axon, 
+                            x=ca1_pyr_coords[int(gid_soma/2), 0], y=ca1_pyr_coords[int(gid_soma/2), 1], theta=ca1_pyr_coords[int(gid_soma/2), 2],
+                            x_intrinsic=ca1_pyr_coords[int(gid_soma/2), 3], y_intrinsic=ca1_pyr_coords[int(gid_soma/2), 4],
+                            x_flat=ca1_pyr_coords[int(gid_soma/2), 5], y_flat=ca1_pyr_coords[int(gid_soma/2), 6])
+        ca1_pyr_cells.append(cell_)
+        # associate gid to spike_detector
+        pc.cell(gid_soma, cell_._spike_detector)
+        pc.cell(gid_axon, cell_._spike_detector_axon)
+
+    ca1_bc_cells = []
+    for gid in gids_bc:
+        cell_ = BasketCell(gid=gid, 
+                        x=ca1_bc_coords[gid - 2*n_pyr_ca1, 0], y=ca1_bc_coords[gid - 2*n_pyr_ca1, 1], theta=ca1_bc_coords[gid - 2*n_pyr_ca1, 2],
+                        x_intrinsic=ca1_bc_coords[gid - 2*n_pyr_ca1, 3], y_intrinsic=ca1_bc_coords[gid - 2*n_pyr_ca1, 4],
+                        x_flat=ca1_bc_coords[gid - 2*n_pyr_ca1, 5], y_flat=ca1_bc_coords[gid - 2*n_pyr_ca1, 6])
+        ca1_bc_cells.append(cell_)
+        # associate gid to spike_detector
+        pc.cell(gid, cell_._spike_detector)
+
+    ca1_olm_cells = []
+    for gid in gids_olm:
+        cell_ = OLMCell(gid=gid, 
+                        x=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 0], y=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 1], theta=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 2],
+                        x_intrinsic=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 3], y_intrinsic=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 4],
+                        x_flat=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 5], y_flat=ca1_olm_coords[gid - 2*n_pyr_ca1 - n_bc_ca1, 6])
+        ca1_olm_cells.append(cell_)
+        # associate gid to spike_detector
+        pc.cell(gid, cell_._spike_detector)
+
+    ca1_cells = ca1_pyr_cells + ca1_bc_cells + ca1_olm_cells
+
+    ca3_schaffers = []
+    for gid_first_node, gid_last_node in zip(gids_sca_first_node, gids_sca_last_node):
+        cell_ = SchafferCollateral_2(gid=gid_first_node, gid_last_node=gid_last_node, nodes_coordinates=ca3_schaffer_nodes_coordinates[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
+                            x_intrinsic_last_node=ca3_schaffer_xs_intrinsic[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)], y_intrinsic_last_node=ca3_schaffer_ys_intrinsic[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
+                            x_flat_last_node=ca3_schaffer_xs_flat[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)], y_flat_last_node=ca3_schaffer_ys_flat[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)],
+                            x=ca3_schaffer_nodes_coordinates[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)][0, 0], y=ca3_schaffer_nodes_coordinates[int((gid_first_node-n_cells_ca1-n_pyr_ca1)/2)][0, 1]
+                            )
+        ca3_schaffers.append(cell_)
+        # associate gid to spike_detector
+        pc.cell(gid_first_node, cell_._spike_detector)
+        pc.cell(gid_last_node, cell_._spike_detector_last_node)
+
+    all_cells = ca1_cells + ca3_schaffers
+
+    # adding noise
+    if rank == 0:  
+        print(f'[+] Adding noise current in subworld {rank_subworld+1}/{pc.nhost_bbs()}')
+        sys.stdout.flush()
+
+    i_noise = h.Vector()
+
+    for cell_ in ca1_cells:
+        for sec in cell_.all:
+            sec.insert("Inoise")
+            sec.myseed_Inoise = RNG.integers(0, 1000000000000000, 1) #seed_noise #settings.seed_noise
+            if "PyramidalCell" in str(cell_):
+                sec.sigma_Inoise = settings.sigma_CA1[0]
+                sec.mean_Inoise = settings.mean_CA1[0]
+                sec.tau_Inoise = settings.tau_CA1[0]
+                sec.inoise_Inoise = -0.0
+                i_noise.record(cell_.soma(0.5)._ref_inoise_Inoise)
+            elif "OLMCell" in str(cell_):
+                sec.sigma_Inoise = settings.sigma_CA1[2]
+                sec.mean_Inoise = settings.mean_CA1[2]
+                sec.tau_Inoise = settings.tau_CA1[2]
+                sec.inoise_Inoise = -0.0
+            else:
+                sec.sigma_Inoise = settings.sigma_CA1[1]
+                sec.mean_Inoise = settings.mean_CA1[1]
+                sec.tau_Inoise = settings.tau_CA1[1]
+                sec.inoise_Inoise = -0.0
+
+        # remove noise in axon
+        if hasattr(cell_, "axonal"):
+            mt = h.MechanismType(0)
+            mt.select('Inoise')
+            for sec in cell_.axonal:
+                mt.remove(sec=sec)
+
+    # set connections
+    if rank == 0:  
+        print('\n[11] Setting connections...')
+        print('-'*32)
+
+        print('[+] Finding all postsynaptic and presynaptic cells...')
+        sys.stdout.flush()
+
+    # set connection matrix
+    conn_mat = np.zeros((n_all_cells, n_all_cells))
+
+    # using flattened coordinates
+    for i in range(n_pyr_ca1):
+        for j in range(n_bc_ca1):
+            dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_bc_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_bc_coords[j, 6])**2)
+            if settings.syn_dist_CA1[0] >= dist_value:
+                conn_mat[i, j + n_pyr_ca1] = 1
+
+        for j in range(n_olm_ca1):
+            dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_olm_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_olm_coords[j, 6])**2)
+            if settings.syn_dist_CA1[0] >= dist_value:
+                conn_mat[i, j + n_pyr_ca1 + n_bc_ca1] = 1
+
+    for i in range(n_bc_ca1):
+        for j in range(n_pyr_ca1):
+            dist_value = np.sqrt((ca1_bc_coords[i, 5] - ca1_pyr_coords[j, 5])**2 + (ca1_bc_coords[i, 6] - ca1_pyr_coords[j, 6])**2)
+            if settings.syn_dist_CA1[1] >= dist_value and conn_mat[n_pyr_ca1:n_pyr_ca1+n_bc_ca1, j].sum(axis=0) < 1: # only one conn. from BC to Pyr
+                conn_mat[i + n_pyr_ca1, j] = 1
+
+        for j in range(n_bc_ca1):
+            dist_value = np.sqrt((ca1_bc_coords[i, 5] - ca1_bc_coords[j, 5])**2 + (ca1_bc_coords[i, 6] - ca1_bc_coords[j, 6])**2)
+            if settings.syn_dist_CA1[1] >= dist_value and i != j:
+                conn_mat[i + n_pyr_ca1, j + n_pyr_ca1] = 1
+
+    for i in range(n_olm_ca1):
+        for j in range(n_pyr_ca1):
+            dist_value = np.sqrt((ca1_olm_coords[i, 5] - ca1_pyr_coords[j, 5])**2 + (ca1_olm_coords[i, 6] - ca1_pyr_coords[j, 6])**2)
+            if settings.syn_dist_CA1[2] >= dist_value:
+                conn_mat[i + n_pyr_ca1 + n_bc_ca1, j] = 1
+
+    # connection from CA3
+    for i in range(len(ca3_schaffer_xs_flat)):
+        for j in range(len(ca1_pyr_coords)):
+            dist_value = np.sqrt((ca3_schaffer_xs_flat[i] - ca1_pyr_coords[j, 5])**2 + (ca3_schaffer_ys_flat[i] - ca1_pyr_coords[j, 6])**2)
+            if settings.syn_dist_CA3_CA1[0] >= dist_value: # and conn_mat[n_cells_ca1: , j].sum(axis=0) < 3: # 3 schaffer inputs for each pyramidal cell
+                conn_mat[n_cells_ca1 + i, j] = 1
+
+    # fill postsynaptic and presynaptic neurons
+    for i in range(n_pyr_ca1):
+        for j in range(n_pyr_ca1):
+            if conn_mat[i, j] > 0 and pc.gid_exists(2*i):
+                pc.gid2cell(2*i)._postsyn_list.append(2*j)
+            if conn_mat[i, j] > 0 and pc.gid_exists(2*j):
+                pc.gid2cell(2*j)._presyn_list.append(2*i)
+        
+        for j in range(n_pyr_ca1, n_pyr_ca1 + n_bc_ca1):
+            if conn_mat[i, j] > 0 and pc.gid_exists(2*i):
+                pc.gid2cell(2*i)._postsyn_list.append(n_pyr_ca1 + j)
+            if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + j):
+                pc.gid2cell(n_pyr_ca1 + j)._presyn_list.append(2*i)
+
+        for j in range(n_pyr_ca1 + n_bc_ca1, n_cells_ca1):
+            if conn_mat[i, j] > 0 and pc.gid_exists(2*i):
+                pc.gid2cell(2*i)._postsyn_list.append(n_pyr_ca1 + j)
+            if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + j):
+                pc.gid2cell(n_pyr_ca1 + j)._presyn_list.append(2*i)
+
+    for i in range(n_pyr_ca1, n_pyr_ca1 + n_bc_ca1):
+        for j in range(n_pyr_ca1):
+            if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + i):
+                pc.gid2cell(n_pyr_ca1 + i)._postsyn_list.append(2*j)
+            if conn_mat[i, j] > 0 and pc.gid_exists(2*j):
+                pc.gid2cell(2*j)._presyn_list.append(n_pyr_ca1 + i)
+        
+        for j in range(n_pyr_ca1, n_pyr_ca1 + n_bc_ca1):
+            if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + i):
+                pc.gid2cell(n_pyr_ca1 + i)._postsyn_list.append(n_pyr_ca1 + j)
+            if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + j):
+                pc.gid2cell(n_pyr_ca1 + j)._presyn_list.append(n_pyr_ca1 + i)
+        
+    for i in range(n_pyr_ca1 + n_bc_ca1, n_cells_ca1):
+        for j in range(n_pyr_ca1):
+            if conn_mat[i, j] > 0 and pc.gid_exists(n_pyr_ca1 + i):
+                pc.gid2cell(n_pyr_ca1 + i)._postsyn_list.append(2*j)
+            if conn_mat[i, j] > 0 and pc.gid_exists(2*j):
+                pc.gid2cell(2*j)._presyn_list.append(n_pyr_ca1 + i)
+
+    for i in range(n_schaffers_ca3):
+        for j in range(n_pyr_ca1):
+            if conn_mat[n_cells_ca1 + i, j] > 0 and pc.gid_exists(n_cells_ca1 + n_pyr_ca1 + 2*i + 1): # connect to last node of schaffer collaterals
+                pc.gid2cell(n_cells_ca1 + n_pyr_ca1 + 2*i + 1)._postsyn_list.append(2*j)
+            if conn_mat[n_cells_ca1 + i, j] > 0 and pc.gid_exists(2*j):
+                pc.gid2cell(2*j)._presyn_list.append(n_cells_ca1 + n_pyr_ca1 + 2*i + 1)
+
+    if rank == 0:
+        print(f'[+] Found all postsynatpic cells in subworld {rank_subworld+1}/{pc.nhost_bbs()}')
+        print(f'[+] Computing number of connections per cell in subworld {rank_subworld+1}/{pc.nhost_bbs()}')
+        sys.stdout.flush()
+
+    pc.barrier()
+
+    pc.runworker()
+
+    for amp in k_amps:
+        for k_sca in k_w_scale:
+            pc.submit(run_simulation, amp, k_sca, duration)
+    while pc.working():
+        pass
+
+    pc.done()
+    h.quit()
+    sys.exit()
