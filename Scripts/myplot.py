@@ -16,7 +16,7 @@ def plot_watermark(fig, **git_kwargs):
     for i, (key, value) in enumerate(git_kwargs.items()):
         plt.text(.9, 1 - 0.01 * len(git_kwargs) - 0.01 * i, f'{key} : {value}\n',
              transform=fig.transFigure, ha="right", va="top", clip_on=False,
-             color = "black", family="Roboto Mono", weight="400", size="xx-small")
+             color = "black", family="Arial", weight="400", size="xx-small")
 
 def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
                  colors: list, cell_types: list[str], x_lim: list[float] = None, y_lim: list[float] = None,
