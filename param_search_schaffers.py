@@ -176,18 +176,17 @@ def set_network_connections(k_sca):
                 cell_._ncs.append(nc_)
 
 
-def create_input(amp, duration, delay):
+def create_input(amp, delay):
     # create input
     for cell_ in ca3_schaffers:
         r_osc = random.uniform(0, 50)
         target_sec = cell_.soma
-        input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, duration, 6, amp, noisy=False)
+        input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, settings.duration, 6, amp, noisy=False)
         cell_._inputs_vector.record(input_._ref_i)
 
 
-def run_simulation(amp, k_sca, duration):
-    # duration = 100
-    delay = 10
+def run_simulation(amp, k_sca):
+    delay = 1000
 
     make_saving_directories(amp, k_sca)
 
@@ -209,7 +208,7 @@ def run_simulation(amp, k_sca, duration):
         print('[+] Oscillatory input')
         sys.stdout.flush()
 
-    create_input(amp, duration, delay)
+    create_input(amp, delay)
     pc.barrier()
 
     if rank == 0:
@@ -226,7 +225,7 @@ def run_simulation(amp, k_sca, duration):
     # set finitializehandler
     fih = h.FInitializeHandler(1, _set_v_init) # random initialization of Vm
 
-    h.tstop = duration #settings.duration
+    h.tstop = settings.duration
     h.celsius = settings.sim_celsius
 
     pc.set_maxstep(10)
@@ -238,8 +237,7 @@ def run_simulation(amp, k_sca, duration):
     h.stdinit()
     h.cvode_active(0)
     start_time = time.time()
-    pc.psolve(duration)
-    # pc.psolve(settings.duration)
+    pc.psolve(settings.duration)
     end_time = time.time()
 
     hours, rem = divmod(end_time - start_time, 3600)
@@ -450,10 +448,10 @@ def run_simulation(amp, k_sca, duration):
                             'mode' : 'magnitude' }
 
         # compute firing rates
-        t_FR_pyr, count_pyr, FR_pyr, fs_n = compute_FR(np.array(t_spikes_pyr)*1e-3, n_pyr_ca1, duration*1e-3, winsize_fr*1e-3, overlap_fr)
-        t_FR_bc, count_bc, FR_bc, _ = compute_FR(np.array(t_spikes_bc)*1e-3, n_bc_ca1, duration*1e-3, winsize_fr*1e-3, overlap_fr)
-        t_FR_olm, count_olm, FR_olm, _ = compute_FR(np.array(t_spikes_olm)*1e-3, n_olm_ca1, duration*1e-3, winsize_fr*1e-3, overlap_fr)
-        t_FR_sca, count_sca, FR_sca, _ = compute_FR(np.array(t_spikes_sca_last)*1e-3, n_schaffers_ca3, duration*1e-3, winsize_fr*1e-3, overlap_fr)
+        t_FR_pyr, count_pyr, FR_pyr, fs_n = compute_FR(np.array(t_spikes_pyr)*1e-3, n_pyr_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
+        t_FR_bc, count_bc, FR_bc, _ = compute_FR(np.array(t_spikes_bc)*1e-3, n_bc_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
+        t_FR_olm, count_olm, FR_olm, _ = compute_FR(np.array(t_spikes_olm)*1e-3, n_olm_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
+        t_FR_sca, count_sca, FR_sca, _ = compute_FR(np.array(t_spikes_sca_last)*1e-3, n_schaffers_ca3, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
 
         with open(os.path.join(dirs["save_dir"], "output.txt"), "w") as f:
             f.write("Git parameters\n")
@@ -544,14 +542,14 @@ def run_simulation(amp, k_sca, duration):
         save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
                         [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
                         ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
-                        x_lim=[0, duration],
+                        x_lim=[0, settings.duration],
                         stim_time=settings.stim_onset, stim_dur=settings.stim_dur, #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
                         **git_kwargs)
         
         save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
                     ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
-                    x_lim=[duration - 1000, duration], size_raster=1., 
+                    x_lim=[settings.duration - 1000, settings.duration], size_raster=1., 
                     stim_time=settings.stim_onset, stim_dur=settings.stim_dur, #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
                     **git_kwargs) # last second
 
@@ -618,8 +616,6 @@ def run_simulation(amp, k_sca, duration):
 
 
 if __name__ == "__main__":
-    duration = 100
-
     # Parse arguments
     parser = argparse.ArgumentParser(description='Optimization of Schaffer -> PYR weights')
 
@@ -931,9 +927,9 @@ if __name__ == "__main__":
 
     for amp in k_amps:
         for k_sca in k_w_scale:
-            pc.submit(run_simulation, amp, k_sca, duration)
+            pc.submit(run_simulation, amp, k_sca, settings.duration)
     while pc.working():
-        pass
+        print(f"Finished for amp = {amp}")
 
     pc.done()
     h.quit()
