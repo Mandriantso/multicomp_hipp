@@ -248,14 +248,12 @@ _data = {
         "type": "monopolar",    
         "target": "CA1",
         "coordinates": [
-            [
                 1335.02,
                 5506.92,
                 0.0
-            ]
         ],  
         "rho": 300, # medium resistivity (ohm cm)
-        "duration": (1/6)*0.5*1e3, # (ms) half cycle of theta
+        "duration": (1/6)*1e3, # (ms) full cycle of theta
         "onset": 1000+6*(1/6)*1e3, # (ms) first theta window at 2s for a 6 Hz theta
         "I": -0.5 # (mA) stimulation amplitude
     },
