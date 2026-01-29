@@ -147,21 +147,14 @@
             }
         }
     },
-    "inputs": {
-        "CA3 schaffers": {
-            "N_pyr": 50,
-            "N_bc": 3,
-            "interval": 250,
-            "N_spikes": 1000,
-            "t_start": 10,
-            "noise": 0.0,
-            "connectivity": {
-                "Pyramidal": 0.03,
-                "Basket": 0.025
-            }
-        },
-        "EC perforant path": {},
-        "MS": {}
+    "input": {
+        "status": true,
+        "type": "oscillatory",
+        "target": "CA3",
+        "rate": 6,
+        "amplitude": 0.093,
+        "onset": 1000,
+        "duration": 4000
     },
     "connectivity": {
         "intra": {
@@ -251,9 +244,9 @@
             ]
         ],
         "rho": 300,
-        "duration": 100.0,
-        "onset": 2000,
-        "I": -1
+        "duration": 83.33333333333333,
+        "onset": 2000.0,
+        "I": -0.5
     },
     "simulation": {
         "duration": 5000.0,
@@ -275,8 +268,8 @@
             "vmax": 1.0
         }
     },
-    "git_short_hash": "324ed17",
-    "timestamp": "Thu Jan 22 11:18:44 2026",
+    "git_short_hash": "c12e343",
+    "timestamp": "Thu Jan 29 15:27:23 2026",
     "git_branch": "main",
-    "git_hash": "324ed17427bb01b4b295fa337157b7b9b84c12f6"
+    "git_hash": "c12e343d922d357b76f07b7548cd248d0175f501"
 }

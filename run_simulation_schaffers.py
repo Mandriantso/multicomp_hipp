@@ -105,7 +105,7 @@ parser.add_argument('-p', '--parameters',
                     nargs='?',
                     metavar='-p',
                     type=str,
-                    default=os.path.join('configs', 'parameters_no_stim.json'), #TODO: change parameters file
+                    default=os.path.join('configs', 'fixed_parameters_monopolar_stim_outer_CA1.json'), #TODO: change parameters file
                     help='Parameters file (json format)')
 
 parser.add_argument('-sd', '--save_dir',
@@ -124,7 +124,7 @@ try:
     print('Using "{0}"'.format(filename))
 except Exception as e:
     print(e)
-    print('Using "parameters_no_stim.json"')
+    print('Using "fixed_parameters_bipolar_stim_perp_CA1.json"')
     data = parameters._data
 parameters.dump(data) # TODO: update file after changing weights ?
 print()
@@ -160,7 +160,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no stim - new schaffer distribution McIntyre model"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test stim dur - amp -0.5 half cycle"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -343,16 +343,6 @@ for cell_ in ca1_cells:
             sec.tau_Inoise = settings.tau_CA1[1]
             sec.inoise_Inoise = -0.0
 
-# for cell_ in ca3_schaffers: #TODO: add to parameters file + in upper loop
-#     for sec in cell_.all:
-#         sec.insert("Inoise")
-#         sec.myseed_Inoise = RNG.integers(0, 1000000000000000, 1) #seed_noise #settings.seed_noise
-#         if "PyramidalCell" in str(cell_):
-#             sec.sigma_Inoise = 0.00000001
-#             sec.mean_Inoise = 0
-#             sec.tau_Inoise = 5
-#             sec.inoise_Inoise = -1.0
-
     # remove noise in axon
     if hasattr(cell_, "axonal"):
         mt = h.MechanismType(0)
@@ -373,11 +363,6 @@ conn_mat = np.zeros((n_all_cells, n_all_cells))
 
 # using flattened coordinates
 for i in range(n_pyr_ca1):
-    # for j in range(n_pyr_ca1):
-    #     dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_pyr_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_pyr_coords[j, 6])**2)
-    #     if settings.syn_dist_CA1[0] >= dist_value and i != j and conn_mat[i, :n_pyr_ca1].sum(axis=0) < 1 and conn_mat[:n_pyr_ca1, j].sum(axis=0) < 1:
-    #         conn_mat[i, j] = 1
-
     for j in range(n_bc_ca1):
         dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_bc_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_bc_coords[j, 6])**2)
         if settings.syn_dist_CA1[0] >= dist_value:
@@ -745,7 +730,7 @@ for cell_ in ca1_pyr_cells: # to | from
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA3_CA1[0]*1
+            nc_.weight[0] = settings.w_CA3_CA1[0]
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -804,21 +789,13 @@ if rank == 0:
     print('[+] Oscillatory input')
     sys.stdout.flush()
 
-duration = 5000
-amp = 0.2#0.005 #0 #6.0
-delay = 1000
 
 # osc_amp = h.Vector()
 # setting oscillatory input current
 for cell_ in ca3_schaffers:
-    # target_secs = list(cell_.lm_list)
-    # target_sec = random.choice(target_secs)
     r_osc = random.uniform(0, 50)
-    # r_osc = 0
     target_sec = cell_.soma
-    input_ = oscInput(cell_, target_sec(0.5), delay+r_osc, duration, 6, amp, noisy=False)
-    # input_ = oscInput(cell_, target_sec(0.5), 10, duration, 6, amp, noisy=True, sigma=0.005, tau_noise=1)
-    # osc_amp.record(input_._ref_i)
+    input_ = oscInput(cell_, target_sec(0.5), settings.input_onset+r_osc, settings.input_duration, settings.input_rate, settings.input_amp, noisy=False)
     # cell_._inputs_list.append(osc_amp)
     cell_._inputs_vector.record(input_._ref_i)
 
@@ -862,20 +839,20 @@ if rank == 0:
     print('-'*32)
 
 # set stim parameters
-# stim_amp = h.Vector()
-# stim_time = h.Vector()
+stim_amp = h.Vector()
+stim_time = h.Vector()
 
-# stim_amp, stim_time = stim_waveform(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp)
+stim_amp, stim_time = stim_waveform(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp, settings.duration-settings.stim_onset-settings.stim_dur)
 
 # Set extracellular stimulation
 # set xtra mechanism in all cells
-# for cell in ca1_cells:
-#     set_xtra_mechanism(cell)
-#     if settings.stim_type == "bipolar":
-#         set_rx_bipolar(cell, settings.stim_pos[0], settings.stim_pos[1], settings.rho)
-#     else:
-#         set_rx_point_elec(cell, settings.stim_pos, settings.rho)
-#     attach_stim(cell, settings.ATTACHED__, stim_amp, stim_time)
+for cell in all_cells:
+    set_xtra_mechanism(cell)
+    if settings.stim_type == "bipolar":
+        set_rx_bipolar(cell, settings.stim_pos[0], settings.stim_pos[1], settings.rho)
+    else:
+        set_rx_point_elec(cell, settings.stim_pos, settings.rho)
+    attach_stim(cell, settings.ATTACHED__, stim_amp, stim_time)
 
 if rank == 0:
     print('[+] Extracellular mechanism set')
@@ -891,7 +868,7 @@ t_vec = h.Vector().record(h._ref_t)
 # set finitializehandler
 fih = h.FInitializeHandler(1, _set_v_init) # random initialization of Vm
 
-h.tstop = duration #settings.duration
+h.tstop = settings.duration #settings.duration
 h.celsius = settings.sim_celsius
 
 pc.set_maxstep(10)
@@ -903,7 +880,7 @@ if rank == 0:
 h.stdinit()
 h.cvode_active(0)
 start_time = time.time()
-pc.psolve(duration)
+pc.psolve(settings.duration)
 # pc.psolve(settings.duration)
 end_time = time.time()
 
@@ -1115,10 +1092,10 @@ if rank == 0:
                         'mode' : 'magnitude' }
 
     # compute firing rates
-    t_FR_pyr, count_pyr, FR_pyr, fs_n = compute_FR(np.array(t_spikes_pyr)*1e-3, n_pyr_ca1, duration*1e-3, winsize_fr*1e-3, overlap_fr)
-    t_FR_bc, count_bc, FR_bc, _ = compute_FR(np.array(t_spikes_bc)*1e-3, n_bc_ca1, duration*1e-3, winsize_fr*1e-3, overlap_fr)
-    t_FR_olm, count_olm, FR_olm, _ = compute_FR(np.array(t_spikes_olm)*1e-3, n_olm_ca1, duration*1e-3, winsize_fr*1e-3, overlap_fr)
-    t_FR_sca, count_sca, FR_sca, _ = compute_FR(np.array(t_spikes_sca_last)*1e-3, n_schaffers_ca3, duration*1e-3, winsize_fr*1e-3, overlap_fr)
+    t_FR_pyr, count_pyr, FR_pyr, fs_n = compute_FR(np.array(t_spikes_pyr)*1e-3, n_pyr_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
+    t_FR_bc, count_bc, FR_bc, _ = compute_FR(np.array(t_spikes_bc)*1e-3, n_bc_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
+    t_FR_olm, count_olm, FR_olm, _ = compute_FR(np.array(t_spikes_olm)*1e-3, n_olm_ca1, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
+    t_FR_sca, count_sca, FR_sca, _ = compute_FR(np.array(t_spikes_sca_last)*1e-3, n_schaffers_ca3, settings.duration*1e-3, winsize_fr*1e-3, overlap_fr)
 
     with open(os.path.join(dirs["save_dir"], "output.txt"), "w") as f:
         f.write("Git parameters\n")
@@ -1129,21 +1106,18 @@ if rank == 0:
         f.write("\n\nSimulation parameters\n")
         f.write("-------------------------\n")
         f.write("remark :\n")
-        f.write("J'ai utilisé une nouvelle distribution des collatéraux de Schaffer\n")
-        f.write("J'ai fait en sorte que les derniers noeuds soient plus ou moins équidistants")
-        f.write("Je refais les expériences en mettant w_sca*1 et offset=50 pour un oscillatoire de 6Hz à 0.2nA")
-        f.write("Collatéraux avec le modèle de McIntyre")
-        f.write("Test sauvegarde des données de chaque noeud")
-        f.write("- no Pyr - Pyr connections\n")
-        f.write("- pyr-bc weights used for sca-pyr connections\n")
-        f.write("- BC - Pyr constrained to one connection max\n")
-        f.write("- Lamellar coordinates used\n")
+        f.write("Test de la durée de la fenêtre de stimulation idéale\n")
+        f.write("Dans le cadre de l'étude de l'effet de l'amplitude de stimulation sur le réseau, je veux tester différentes amplitudes de stimulation")
+        f.write("Cependant, pour faciliter la métrique de mesure (quelle portion du réseau est affecté), qui est ici le nombre de spike de chaque neurone durant chaque fenêtre de theta,")
+        f.write("on veut lancer la stimulation en synchronie avec les fenêtres. Donc soit durant une fenêtre entière, soit durant une demi fenêtre")
+        f.write(f"Ici je teste la stimulation monopolaire cathodic externe, pour amp={settings.stim_amp} mA et dur={settings.stim_dur} (half theta cycle)")
+        f.write("Les paramètres utilisés sont les paramètres fixés après recherche de paramètres")
         f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
         f.write("BC - Pyr weight : {}\n".format(settings.w_CA1[1][0]))
         f.write("BC - BC weight : {}\n".format(settings.w_CA1[1][1]))
         f.write("OLM - Pyr weight : {}\n".format(settings.w_CA1[2][0]))
         f.write("Pyr - OLM weight : {}\n".format(settings.w_CA1[0][2]))
-        f.write("\nsca - pyr weight : {}\n".format(settings.w_CA3_CA1[0]*0))
+        f.write("\nsca - pyr weight : {}\n".format(settings.w_CA3_CA1[0]))
 
         f.write("\n\nSimulation results\n")
         f.write("-------------------------\n")
@@ -1159,14 +1133,6 @@ if rank == 0:
         f.write("OLM firing rate : {} Hz\n\n".format(np.mean(FR_olm[-200:])))
         f.write("Sca firing rate : {} Hz\n\n".format(np.mean(FR_sca[-200:])))
 
-        # f.write("\n\nNodes details\n")
-        # f.write("-------------------------\n")
-        # f.write("Schaffer[0]\n")
-        # f.write("N_nodes : {}\n".format(len(ca3_schaffers[0].nodes)))
-        # f.write("Schaffer[2]\n")
-        # f.write("N_nodes : {}\n".format(len(ca3_schaffers[2].nodes)))
-        # f.write("Schaffer[19]\n")
-        # f.write("N_nodes : {}\n".format(len(ca3_schaffers[19].nodes)))
         f.close()
 
     # compute spectrograms
@@ -1209,28 +1175,64 @@ if rank == 0:
 
     save_all_nodes_data(os.path.join(dirs['data'], 'CA3_all_nodes_Vm'), np.array(t_vec), merged_data_nodes_Vm)
     save_all_nodes_data(os.path.join(dirs['data'], 'CA3_all_nodes_i'), np.array(t_vec), merged_data_nodes_i)
-    # np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_Vm.npz'), **merged_data_nodes_Vm)
-    # np.savez(os.path.join(dirs['data'], 'CA3_all_nodes_i.npz'), **merged_data_nodes_i)
 
-    # stim_loc_pyr = np.abs(ca1_pyr_coords[:,5] - settings.stim_pos[0]).argmin()
-    # stim_loc_bc = np.abs(ca1_bc_coords[:,5] - settings.stim_pos[0]).argmin()
+    if settings.stim_status:
+        if settings.stim_type == "bipolar":
+            stim_loc_pyr0 = np.sqrt((ca1_pyr_coords[:,0] - settings.stim_pos[0][0])**2+(ca1_pyr_coords[:,1] - settings.stim_pos[0][1])**2).argmin()
+            stim_loc_pyr1 = np.sqrt((ca1_pyr_coords[:,0] - settings.stim_pos[1][0])**2+(ca1_pyr_coords[:,1] - settings.stim_pos[1][1])**2).argmin()
+            stim_loc_bc0 = np.sqrt((ca1_bc_coords[:,0] - settings.stim_pos[0][0])**2+(ca1_bc_coords[:,1] - settings.stim_pos[0][1])**2).argmin()+len(ca1_pyr_coords)
+            stim_loc_bc1 = np.sqrt((ca1_bc_coords[:,0] - settings.stim_pos[1][0])**2+(ca1_bc_coords[:,1] - settings.stim_pos[1][1])**2).argmin()+len(ca1_pyr_coords)
+            stim_loc_sca0 = np.sqrt((ca3_schaffer_nodes_coordinates[:][-1,0] - settings.stim_pos[0][0])**2 + (ca3_schaffer_nodes_coordinates[:][-1,1] - settings.stim_pos[0][1])**2).argmin()+n_cells_ca1
+            stim_loc_sca1 = np.sqrt((ca3_schaffer_nodes_coordinates[:][-1,0] - settings.stim_pos[1][0])**2 + (ca3_schaffer_nodes_coordinates[:][-1,1] - settings.stim_pos[1][1])**2).argmin()+n_cells_ca1
 
-    save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
+            stim_locs = [stim_loc_pyr0, stim_loc_pyr1, stim_loc_bc0, stim_loc_bc1, stim_loc_sca0, stim_loc_sca1]
+        else:
+            stim_loc_pyr = np.sqrt((ca1_pyr_coords[:,0] - settings.stim_pos[0])**2+(ca1_pyr_coords[:,1] - settings.stim_pos[1])**2).argmin()
+            stim_loc_bc = np.sqrt((ca1_bc_coords[:,0] - settings.stim_pos[0])**2+(ca1_bc_coords[:,1] - settings.stim_pos[1])**2).argmin()+len(ca1_pyr_coords)
+            stim_loc_sca = np.sqrt((ca3_schaffer_nodes_coordinates[:][-1,0] - settings.stim_pos[0])**2 + (ca3_schaffer_nodes_coordinates[:][-1,1] - settings.stim_pos[1])**2).argmin()+n_cells_ca1
+
+            stim_locs = [stim_loc_pyr, stim_loc_bc, stim_loc_sca]
+
+        save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
+                        [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
+                        ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
+                        x_lim=[0, settings.duration],
+                        stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs,
+                        **git_kwargs)
+        
+        save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
                     ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
-                    x_lim=[0, duration],
-                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
-                    **git_kwargs)
-    
-    save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
-                [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
-                ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
-                x_lim=[duration - 1000, duration], size_raster=1., 
-                stim_time=settings.stim_onset, stim_dur=settings.stim_dur, #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
-                **git_kwargs) # last second
+                    x_lim=[settings.stim_onset - 500, settings.stim_onset+settings.stim_dur+500], size_raster=1., 
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs,
+                    **git_kwargs) # last second
 
-    # np.savez(os.path.join(dirs['data'], 'theta_inputs.npz'), t=np.array(t_vec), amplitude=np.array(osc_inputs))
+    else:
+        save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
+                        [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
+                        ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
+                        x_lim=[0, settings.duration],
+                        stim_time=settings.stim_onset, stim_dur=settings.stim_dur, 
+                        **git_kwargs)
+        
+        save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
+                    [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
+                    ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
+                    x_lim=[settings.stim_onset - 500, settings.stim_onset+settings.stim_dur+500], size_raster=1., 
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, 
+                    **git_kwargs) # last second
+
     np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
+    np.savez(os.path.join(dirs['data'], 'stimulation.npz'), t=np.array(stim_time), amp=np.array(stim_amp))
+
+    fig1, ax1 = plt.subplots(1,1,figsize=(9,3))
+    ax1.plot(np.array(stim_time), np.array(stim_amp), color='black')
+    ax1.set_xlabel("Time (ms)")
+    ax1.set_ylabel("nA")
+    plot_watermark(fig1, **git_kwargs)
+    plt.savefig(os.path.join(dirs['figures'], 'stimulation.png'), bbox_inches="tight")
+    plt.clf()
+    plt.close()
 
     # fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
     # ax2.plot(np.array(t_vec), np.array(osc_amp), color='red')
@@ -1239,14 +1241,14 @@ if rank == 0:
     # plot_watermark(fig2, **git_kwargs)
     # plt.savefig(os.path.join(dirs['figures'], 'theta_input.png'), bbox_inches="tight")
 
-    fig3, ax3 = plt.subplots(1,1,figsize=(9,3))
-    ax3.plot(np.array(t_vec), np.array(i_noise), color='black')
-    ax3.set_xlabel("Time (ms)")
-    ax3.set_ylabel("nA")
-    plot_watermark(fig3, **git_kwargs)
-    plt.savefig(os.path.join(dirs['figures'], 'i_noise.png'), bbox_inches="tight")
-    plt.clf()
-    plt.close()
+    # fig3, ax3 = plt.subplots(1,1,figsize=(9,3))
+    # ax3.plot(np.array(t_vec), np.array(i_noise), color='black')
+    # ax3.set_xlabel("Time (ms)")
+    # ax3.set_ylabel("nA")
+    # plot_watermark(fig3, **git_kwargs)
+    # plt.savefig(os.path.join(dirs['figures'], 'i_noise.png'), bbox_inches="tight")
+    # plt.clf()
+    # plt.close()
 
     # fig4, axs = plt.subplots(3,1,figsize=(9,3), sharex=True)
     # axs[0].plot(np.array(t_vec), np.array(osc_inputs[0]), color='red')
