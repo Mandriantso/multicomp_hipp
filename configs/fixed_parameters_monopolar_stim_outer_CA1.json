@@ -237,14 +237,12 @@
         "type": "monopolar",
         "target": "CA1",
         "coordinates": [
-            [
-                1335.02,
-                5506.92,
-                0.0
-            ]
+            1335.02,
+            5506.92,
+            0.0
         ],
         "rho": 300,
-        "duration": 83.33333333333333,
+        "duration": 166.66666666666666,
         "onset": 2000.0,
         "I": -0.5
     },
@@ -268,8 +266,8 @@
             "vmax": 1.0
         }
     },
-    "git_short_hash": "c12e343",
-    "timestamp": "Thu Jan 29 15:27:23 2026",
+    "git_short_hash": "9b39add",
+    "timestamp": "Thu Jan 29 17:36:53 2026",
     "git_branch": "main",
-    "git_hash": "c12e343d922d357b76f07b7548cd248d0175f501"
+    "git_hash": "9b39add6e6860d4190aa6d3930f27a6bf50c7176"
 }

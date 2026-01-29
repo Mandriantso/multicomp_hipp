@@ -124,7 +124,7 @@ try:
     print('Using "{0}"'.format(filename))
 except Exception as e:
     print(e)
-    print('Using "fixed_parameters_bipolar_stim_perp_CA1.json"')
+    print('Using "fixed_parameters_monopolar_stim_outer_CA1.json"')
     data = parameters._data
 parameters.dump(data) # TODO: update file after changing weights ?
 print()
@@ -160,7 +160,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test stim dur - amp -0.5 half cycle"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test stim dur - amp {settings.stim_amp} full cycle"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -1110,7 +1110,7 @@ if rank == 0:
         f.write("Dans le cadre de l'étude de l'effet de l'amplitude de stimulation sur le réseau, je veux tester différentes amplitudes de stimulation")
         f.write("Cependant, pour faciliter la métrique de mesure (quelle portion du réseau est affecté), qui est ici le nombre de spike de chaque neurone durant chaque fenêtre de theta,")
         f.write("on veut lancer la stimulation en synchronie avec les fenêtres. Donc soit durant une fenêtre entière, soit durant une demi fenêtre")
-        f.write(f"Ici je teste la stimulation monopolaire cathodic externe, pour amp={settings.stim_amp} mA et dur={settings.stim_dur} (half theta cycle)")
+        f.write(f"Ici je teste la stimulation monopolaire cathodic externe, pour amp={settings.stim_amp} mA et dur={settings.stim_dur} (full theta cycle)")
         f.write("Les paramètres utilisés sont les paramètres fixés après recherche de paramètres")
         f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
         f.write("BC - Pyr weight : {}\n".format(settings.w_CA1[1][0]))
@@ -1182,14 +1182,36 @@ if rank == 0:
             stim_loc_pyr1 = np.sqrt((ca1_pyr_coords[:,0] - settings.stim_pos[1][0])**2+(ca1_pyr_coords[:,1] - settings.stim_pos[1][1])**2).argmin()
             stim_loc_bc0 = np.sqrt((ca1_bc_coords[:,0] - settings.stim_pos[0][0])**2+(ca1_bc_coords[:,1] - settings.stim_pos[0][1])**2).argmin()+len(ca1_pyr_coords)
             stim_loc_bc1 = np.sqrt((ca1_bc_coords[:,0] - settings.stim_pos[1][0])**2+(ca1_bc_coords[:,1] - settings.stim_pos[1][1])**2).argmin()+len(ca1_pyr_coords)
-            stim_loc_sca0 = np.sqrt((ca3_schaffer_nodes_coordinates[:][-1,0] - settings.stim_pos[0][0])**2 + (ca3_schaffer_nodes_coordinates[:][-1,1] - settings.stim_pos[0][1])**2).argmin()+n_cells_ca1
-            stim_loc_sca1 = np.sqrt((ca3_schaffer_nodes_coordinates[:][-1,0] - settings.stim_pos[1][0])**2 + (ca3_schaffer_nodes_coordinates[:][-1,1] - settings.stim_pos[1][1])**2).argmin()+n_cells_ca1
+
+            min_sca0 = np.inf
+            idx0 = 0
+            min_sca1 = np.inf
+            idx1 = 0
+            for i in range(settings.N_CA3[0]):
+                dist0 = np.sqrt((ca3_schaffer_nodes_coordinates[i][-1,0] - settings.stim_pos[0][0])**2 + (ca3_schaffer_nodes_coordinates[i][-1,1] - settings.stim_pos[0][1])**2)
+                dist1 = np.sqrt((ca3_schaffer_nodes_coordinates[i][-1,0] - settings.stim_pos[1][0])**2 + (ca3_schaffer_nodes_coordinates[i][-1,1] - settings.stim_pos[1][1])**2)
+                if dist0 < min_sca0:
+                    min_sca0 = dist0
+                    idx0 = i
+                if dist1 < min_sca1:
+                    min_sca1 = dist1
+                    idx1 = i
+            stim_loc_sca0 = idx0 + n_cells_ca1
+            stim_loc_sca1 = idx1 + n_cells_ca1
 
             stim_locs = [stim_loc_pyr0, stim_loc_pyr1, stim_loc_bc0, stim_loc_bc1, stim_loc_sca0, stim_loc_sca1]
         else:
             stim_loc_pyr = np.sqrt((ca1_pyr_coords[:,0] - settings.stim_pos[0])**2+(ca1_pyr_coords[:,1] - settings.stim_pos[1])**2).argmin()
             stim_loc_bc = np.sqrt((ca1_bc_coords[:,0] - settings.stim_pos[0])**2+(ca1_bc_coords[:,1] - settings.stim_pos[1])**2).argmin()+len(ca1_pyr_coords)
-            stim_loc_sca = np.sqrt((ca3_schaffer_nodes_coordinates[:][-1,0] - settings.stim_pos[0])**2 + (ca3_schaffer_nodes_coordinates[:][-1,1] - settings.stim_pos[1])**2).argmin()+n_cells_ca1
+
+            min_sca = np.inf
+            idx = 0
+            for i in range(settings.N_CA3[0]):
+                dist = np.sqrt((ca3_schaffer_nodes_coordinates[i][-1,0] - settings.stim_pos[0])**2 + (ca3_schaffer_nodes_coordinates[i][-1,1] - settings.stim_pos[1])**2)
+                if dist < min_sca:
+                    min_sca = dist
+                    idx = i
+            stim_loc_sca = idx + n_cells_ca1
 
             stim_locs = [stim_loc_pyr, stim_loc_bc, stim_loc_sca]
 
@@ -1203,7 +1225,7 @@ if rank == 0:
         save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
                     ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
-                    x_lim=[settings.stim_onset - 500, settings.stim_onset+settings.stim_dur+500], size_raster=1., 
+                    x_lim=[settings.stim_onset - 600, settings.stim_onset+settings.stim_dur+1000], size_raster=1., 
                     stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs,
                     **git_kwargs) # last second
 
@@ -1218,7 +1240,7 @@ if rank == 0:
         save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
                     ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
-                    x_lim=[settings.stim_onset - 500, settings.stim_onset+settings.stim_dur+500], size_raster=1., 
+                    x_lim=[settings.stim_onset - 600, settings.stim_onset+settings.stim_dur+1000], size_raster=1., 
                     stim_time=settings.stim_onset, stim_dur=settings.stim_dur, 
                     **git_kwargs) # last second
 
