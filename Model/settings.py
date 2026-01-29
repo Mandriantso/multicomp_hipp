@@ -65,10 +65,17 @@ syn_delay = 1 # (ms)
 syn_exc = [] # default: [0.5, 3., 0]
 syn_inh = [] # default: [1., 8., -75]
 
-# TODO : connection weights inter areas
+# connection weights inter areas
 w_CA3_CA1 = []
 
-# TODO : inputs 
+# input
+input_status = False
+input_target = None # CA3/CA1
+input_type = None # oscillatory/ramp
+input_rate = 0 # frequency if oscillatory input
+input_amp = 0 # mA
+input_onset = 0 # ms
+input_duration = 0 # ms
 
 # extracellular stimulation
 stim_status = False
@@ -179,6 +186,16 @@ def init(data):
     rho = data['stimulation']['rho']
     sim_celsius = data['simulation']['celsius']
 
+    # input parameters
+    global input_status, input_type, input_target, input_rate, input_amp, input_onset, input_duration
+    input_status = data['input']['status']
+    input_type = data['input']['type']
+    input_target = data['input']['target']
+    input_rate = data['input']['rate']
+    input_amp = data['input']['amplitude']
+    input_onset = data['input']['onset']
+    input_duration = data['input']['duration']
+
     # extracellular stimulation parameters
     global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, stim_type, ATTACHED__
     stim_status = data['stimulation']['status']
@@ -186,7 +203,7 @@ def init(data):
     stim_amp = data['stimulation']['I']
     stim_onset = data['stimulation']['onset']
     stim_pos = data['stimulation']['coordinates']
-    # stim_type = data['stimulation']['type']
+    stim_type = data['stimulation']['type']
     ATTACHED__ = 0
 
     # git stuff

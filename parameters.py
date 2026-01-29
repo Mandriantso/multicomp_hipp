@@ -158,21 +158,14 @@ _data = {
             }
         }
     },
-    "inputs": {
-        "CA3 schaffers": {# if network consists only of CA1
-            "N_pyr": 50, # number of pyramidal cells receiving input / also total number of input cells for now (1-1 connection)
-            "N_bc": 3, # number of basket cells receiving input
-            "interval": THETA, # (ms) interspike interval 
-            "N_spikes": 1000, # max number of spikes
-            "t_start": DELSTART, # delay until first spike
-            "noise": 0.0,
-            "connectivity": {
-                "Pyramidal": 0.03,
-                "Basket": 0.025
-            }
-        },
-        "EC perforant path": {}, # TODO
-        "MS": {} # TODO
+    "input": { 
+        "status": True,
+        "type": "oscillatory",
+        "target": "CA3",
+        "rate": 6, # Hz 
+        "amplitude": 0.093, # mA
+        "onset": 1000, # ms
+        "duration": 4000 # ms
     },
     "connectivity": {
         "intra": {
@@ -232,7 +225,7 @@ _data = {
         "inter": {
             "CA3-CA1":{
                 "syn_distance": 206.11 * 1.5,
-                "weight": 0.009
+                "weight": 0.009 * 2.4
             }
         } # TODO
     },
@@ -251,17 +244,20 @@ _data = {
         }
     },
     "stimulation": {
-        "status": False, # False -> no stimulation; True -> stimulation is on
-        "type": " ",    
-        "target": " ",
-        "coordinates": [[         
-        ], [
-        ]  
+        "status": True, # False -> no stimulation; True -> stimulation is on
+        "type": "monopolar",    
+        "target": "CA1",
+        "coordinates": [
+            [
+                1335.02,
+                5506.92,
+                0.0
+            ]
         ],  
         "rho": 300, # medium resistivity (ohm cm)
-        "duration": 0.0, # (ms)
-        "onset": 0, # (ms)
-        "I": 0 # (mA) stimulation amplitude
+        "duration": (1/6)*0.5*1e3, # (ms) half cycle of theta
+        "onset": 1000+6*(1/6)*1e3, # (ms) first theta window at 2s for a 6 Hz theta
+        "I": -0.5 # (mA) stimulation amplitude
     },
     "simulation": {
         "duration": 5000.0, # (ms)
@@ -368,7 +364,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='parameters_no_stim',
+                        default='fixed_parameters_monopolar_stim_outer_CA1',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
