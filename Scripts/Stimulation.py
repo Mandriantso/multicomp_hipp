@@ -7,8 +7,8 @@ def set_rx_point_elec(cell, stim_pos, rho):
 		if h.ismembrane('xtra', sec=sec_id):
 			for seg in sec_id:
 				r = np.sqrt((seg.x_xtra - stim_pos[0])**2 + (seg.y_xtra - stim_pos[1])**2 + (seg.z_xtra - stim_pos[2])**2)
-				r = max(r, (400))
-				# r = max(r, seg.diam/2)
+				# r = max(r, 400)
+				r = max(r, seg.diam/2)
 				# if r==0:
 				# 	r = seg.diam / 2
 				
@@ -95,7 +95,7 @@ def attach_stim(cell, attached, stim_amp, stim_time):
 				
 
 # create rectangular waveform stimulation
-def stim_waveform(stim_amp, stim_time, delay, dur, amp, dur_stim):
+def single_pulse(stim_amp, stim_time, delay, dur, amp, dur_stim):
 	stim_amp.resize(6)
 	stim_amp.fill(0)
 	stim_amp.x[2] = 1
@@ -109,4 +109,67 @@ def stim_waveform(stim_amp, stim_time, delay, dur, amp, dur_stim):
 	stim_time.x[4] = delay + dur
 	stim_time.x[5] = dur_stim
 	
+	return stim_amp, stim_time
+
+
+def train_pulse(stim_amp, stim_time, amp, onset, duration, pulse_width, frequency, stim_type, sim_dur):
+	# determine number of pulses
+	n_pulses = int(duration*frequency*1e-3)
+
+	# determine interpulse duration
+	dur_inter_pulse = (duration - n_pulses * pulse_width)/n_pulses
+
+	dur_pattern = pulse_width + dur_inter_pulse
+
+	if stim_type == 'biphasic':
+		len_pattern = 6 # number of points to draw one pattern
+		len_vec_stim = len_pattern * n_pulses + 2
+
+		# amplitude vectore
+		stim_amp.resize(len_vec_stim)
+		# stim_amp.fill(0)
+		for i in range(n_pulses):
+			stim_amp.x[len_pattern*i] = 0
+			stim_amp.x[len_pattern*i+1] = 0
+			stim_amp.x[len_pattern*i+2] = 1
+			stim_amp.x[len_pattern*i+3] = 1
+			stim_amp.x[len_pattern*i+4] = -1
+			stim_amp.x[len_pattern*i+5] = -1
+		stim_amp.mul(amp)
+
+		# time vector
+		stim_time.resize(len_vec_stim)
+		stim_time.x[0] = 0
+		stim_time.x[1] = onset
+		for i in range(n_pulses):	
+			stim_time.x[len_pattern*i+2] = onset + i*dur_pattern
+			stim_time.x[len_pattern*i+3] = onset + i*dur_pattern + pulse_width
+			stim_time.x[len_pattern*i+4] = onset + i*dur_pattern + pulse_width
+			stim_time.x[len_pattern*i+5] = onset + i*dur_pattern + pulse_width*2
+			stim_time.x[len_pattern*i+6] = onset + i*dur_pattern + pulse_width*2
+			stim_time.x[len_pattern*i+7] = onset + i*dur_pattern + dur_pattern 
+		stim_time.x[len_vec_stim-1] = sim_dur	
+
+	else:
+		len_pattern = 4 # number of points to draw one pattern
+		len_vec_stim = len_pattern * n_pulses + 2
+		
+		# amplitude vectore
+		stim_amp.resize(len_vec_stim)
+		# stim_amp.fill(0)
+		for i in range(n_pulses):
+			stim_amp.x[len_pattern*i+2] = 1
+			stim_amp.x[len_pattern*i+3] = 1
+		stim_amp.mul(amp)
+
+		# time vector
+		stim_time.resize(len_vec_stim)
+		stim_time.x[1] = onset 
+		for i in range(n_pulses):
+			stim_time.x[len_pattern*i+2] = onset + i*dur_pattern
+			stim_time.x[len_pattern*i+3] = onset + i*dur_pattern + pulse_width
+			stim_time.x[len_pattern*i+4] = onset + i*dur_pattern + pulse_width
+			stim_time.x[len_pattern*i+5] = onset + i*dur_pattern + dur_pattern 
+		stim_time.x[len_vec_stim-1] = sim_dur
+
 	return stim_amp, stim_time
