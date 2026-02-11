@@ -105,7 +105,7 @@ parser.add_argument('-p', '--parameters',
                     nargs='?',
                     metavar='-p',
                     type=str,
-                    default=os.path.join('configs', 'fixed_parameters_monopolar_stim_outer_CA1.json'), #TODO: change parameters file
+                    default=os.path.join('configs', 'fixed_parameters_monopolar_stim_outer_CA1_biphasic_train_pulses.json'), #TODO: change parameters file
                     help='Parameters file (json format)')
 
 parser.add_argument('-sd', '--save_dir',
@@ -160,7 +160,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test stim dur - amp {settings.stim_amp} full cycle"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 50Hz 0.300ms 1.5mA"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -842,13 +842,16 @@ if rank == 0:
 stim_amp = h.Vector()
 stim_time = h.Vector()
 
-stim_amp, stim_time = stim_waveform(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp, settings.duration-settings.stim_onset-settings.stim_dur)
+if settings.stim_type == "train_pulses":
+    stim_amp, stim_time = train_pulse(stim_amp, stim_time, settings.stim_amp, settings.stim_onset, settings.stim_duration, settings.stim_pulse_width, settings.stim_freq, settings.stim_waveform, settings.duration) # settings.stim_onset
+else:
+    stim_amp, stim_time = single_pulse(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp, settings.duration)
 
 # Set extracellular stimulation
 # set xtra mechanism in all cells
 for cell in all_cells:
     set_xtra_mechanism(cell)
-    if settings.stim_type == "bipolar":
+    if settings.stim_electrode == "bipolar":
         set_rx_bipolar(cell, settings.stim_pos[0], settings.stim_pos[1], settings.rho)
     else:
         set_rx_point_elec(cell, settings.stim_pos, settings.rho)
@@ -868,7 +871,7 @@ t_vec = h.Vector().record(h._ref_t)
 # set finitializehandler
 fih = h.FInitializeHandler(1, _set_v_init) # random initialization of Vm
 
-h.tstop = settings.duration #settings.duration
+h.tstop = settings.duration 
 h.celsius = settings.sim_celsius
 
 pc.set_maxstep(10)
@@ -1106,11 +1109,7 @@ if rank == 0:
         f.write("\n\nSimulation parameters\n")
         f.write("-------------------------\n")
         f.write("remark :\n")
-        f.write("Test de la durée de la fenêtre de stimulation idéale\n")
-        f.write("Dans le cadre de l'étude de l'effet de l'amplitude de stimulation sur le réseau, je veux tester différentes amplitudes de stimulation")
-        f.write("Cependant, pour faciliter la métrique de mesure (quelle portion du réseau est affecté), qui est ici le nombre de spike de chaque neurone durant chaque fenêtre de theta,")
-        f.write("on veut lancer la stimulation en synchronie avec les fenêtres. Donc soit durant une fenêtre entière, soit durant une demi fenêtre")
-        f.write(f"Ici je teste la stimulation monopolaire cathodic externe, pour amp={settings.stim_amp} mA et dur={settings.stim_dur} (full theta cycle)")
+        f.write("Test de train pulses biphasic pour une amplitude de 1.5 sur une durée de 2s\n")
         f.write("Les paramètres utilisés sont les paramètres fixés après recherche de paramètres")
         f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
         f.write("BC - Pyr weight : {}\n".format(settings.w_CA1[1][0]))
