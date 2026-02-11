@@ -266,7 +266,8 @@ _data = {
         "onset": 2000, # (ms) 
         "I": 1.5, # (mA) stimulation amplitude
         "pulse_width": 0.300, #ms
-        "frequency": 50 # Hz
+        "interphase": 0., # ms
+        "frequency": 130 # Hz
     },
     "simulation": {
         "duration": 5000.0, # (ms)

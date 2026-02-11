@@ -88,6 +88,7 @@ stim_type = None # single_pulse/train_pulses
 stim_waveform = None # monophasic/biphasic
 stim_freq = None # frequency if train of pulses
 stim_pulse_width = None # ms
+stim_interphase = 0 # ms time between two phases if biphasic stim
 ATTACHED__ = 0
 
 # Reproducibility settings
@@ -201,7 +202,7 @@ def init(data):
     input_duration = data['input']['duration']
 
     # extracellular stimulation parameters
-    global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, stim_type, stim_electrode, stim_waveform, stim_freq, stim_pulse_width, ATTACHED__
+    global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, stim_type, stim_electrode, stim_waveform, stim_freq, stim_pulse_width, stim_interphase, ATTACHED__
     stim_status = data['stimulation']['status']
     stim_dur = data['stimulation']['duration']
     stim_amp = data['stimulation']['I']
@@ -212,6 +213,7 @@ def init(data):
     stim_waveform = data['stimulation']['waveform']
     stim_freq = data['stimulation']['frequency']
     stim_pulse_width = data['stimulation']['pulse_width']
+    stim_interphase = data['stimulation']['interphase']
 
     ATTACHED__ = 0
 
