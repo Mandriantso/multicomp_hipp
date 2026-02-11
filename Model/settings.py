@@ -83,7 +83,11 @@ stim_pos = [] # [x, y, z] coordinates of stimulation
 stim_dur = 1 # (ms)
 stim_onset = 100 # (ms)
 stim_amp = [] # (mA)
-stim_type = None # monopolar/bipolar
+stim_electrode = None # monopolar/bipolar
+stim_type = None # single_pulse/train_pulses
+stim_waveform = None # monophasic/biphasic
+stim_freq = None # frequency if train of pulses
+stim_pulse_width = None # ms
 ATTACHED__ = 0
 
 # Reproducibility settings
@@ -197,13 +201,18 @@ def init(data):
     input_duration = data['input']['duration']
 
     # extracellular stimulation parameters
-    global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, stim_type, ATTACHED__
+    global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, stim_type, stim_electrode, stim_waveform, stim_freq, stim_pulse_width, ATTACHED__
     stim_status = data['stimulation']['status']
     stim_dur = data['stimulation']['duration']
     stim_amp = data['stimulation']['I']
     stim_onset = data['stimulation']['onset']
     stim_pos = data['stimulation']['coordinates']
     stim_type = data['stimulation']['type']
+    stim_electrode = data['stimulation']['electrode']
+    stim_waveform = data['stimulation']['waveform']
+    stim_freq = data['stimulation']['frequency']
+    stim_pulse_width = data['stimulation']['pulse_width']
+
     ATTACHED__ = 0
 
     # git stuff
