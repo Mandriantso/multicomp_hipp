@@ -105,7 +105,7 @@ parser.add_argument('-p', '--parameters',
                     nargs='?',
                     metavar='-p',
                     type=str,
-                    default=os.path.join('configs', 'fixed_parameters_monopolar_stim_inner_CA1_biphasic_train_pulses.json'), #TODO: change parameters file
+                    default=os.path.join('configs', 'fixed_parameters_bipolar_stim_par_CA1_biphasic_train_pulses.json'), 
                     help='Parameters file (json format)')
 
 parser.add_argument('-sd', '--save_dir',
@@ -160,7 +160,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 50Hz 0.300ms 1.5mA - inner CA1"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 50Hz 0.300ms 1.5mA - bipolar par CA1"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
