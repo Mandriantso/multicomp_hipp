@@ -112,17 +112,17 @@ def single_pulse(stim_amp, stim_time, delay, dur, amp, dur_stim):
 	return stim_amp, stim_time
 
 
-def train_pulse(stim_amp, stim_time, amp, onset, duration, pulse_width, frequency, stim_type, sim_dur):
+def train_pulse(stim_amp, stim_time, amp, onset, duration, pulse_width, frequency, stim_type, sim_dur, interphase=0):
 	# determine number of pulses
 	n_pulses = int(duration*frequency*1e-3)
 
-	# determine interpulse duration
-	dur_inter_pulse = (duration - n_pulses * pulse_width)/n_pulses
-
-	dur_pattern = pulse_width + dur_inter_pulse
-
 	if stim_type == 'biphasic':
-		len_pattern = 6 # number of points to draw one pattern
+		# determine interpulse duration
+		dur_inter_pulse = 1/(frequency*1e-3) - (2*pulse_width+interphase)
+
+		dur_pattern = 2*pulse_width + interphase + dur_inter_pulse
+
+		len_pattern = 8 # number of points to draw one pattern
 		len_vec_stim = len_pattern * n_pulses + 2
 
 		# amplitude vectore
@@ -133,8 +133,10 @@ def train_pulse(stim_amp, stim_time, amp, onset, duration, pulse_width, frequenc
 			stim_amp.x[len_pattern*i+1] = 0
 			stim_amp.x[len_pattern*i+2] = 1
 			stim_amp.x[len_pattern*i+3] = 1
-			stim_amp.x[len_pattern*i+4] = -1
-			stim_amp.x[len_pattern*i+5] = -1
+			stim_amp.x[len_pattern*i+4] = 0
+			stim_amp.x[len_pattern*i+5] = 0
+			stim_amp.x[len_pattern*i+6] = -1
+			stim_amp.x[len_pattern*i+7] = -1
 		stim_amp.mul(amp)
 
 		# time vector
@@ -145,12 +147,19 @@ def train_pulse(stim_amp, stim_time, amp, onset, duration, pulse_width, frequenc
 			stim_time.x[len_pattern*i+2] = onset + i*dur_pattern
 			stim_time.x[len_pattern*i+3] = onset + i*dur_pattern + pulse_width
 			stim_time.x[len_pattern*i+4] = onset + i*dur_pattern + pulse_width
-			stim_time.x[len_pattern*i+5] = onset + i*dur_pattern + pulse_width*2
-			stim_time.x[len_pattern*i+6] = onset + i*dur_pattern + pulse_width*2
-			stim_time.x[len_pattern*i+7] = onset + i*dur_pattern + dur_pattern 
+			stim_time.x[len_pattern*i+5] = onset + i*dur_pattern + pulse_width + interphase
+			stim_time.x[len_pattern*i+6] = onset + i*dur_pattern + pulse_width + interphase
+			stim_time.x[len_pattern*i+7] = onset + i*dur_pattern + pulse_width + interphase + pulse_width 
+			stim_time.x[len_pattern*i+8] = onset + i*dur_pattern + pulse_width + interphase + pulse_width 
+			stim_time.x[len_pattern*i+9] = onset + i*dur_pattern + dur_pattern 
 		stim_time.x[len_vec_stim-1] = sim_dur	
 
 	else:
+		# determine interpulse duration
+		dur_inter_pulse = 1/(frequency*1e-3) - pulse_width
+
+		dur_pattern = pulse_width + dur_inter_pulse
+
 		len_pattern = 4 # number of points to draw one pattern
 		len_vec_stim = len_pattern * n_pulses + 2
 		
