@@ -234,7 +234,7 @@
     },
     "stimulation": {
         "status": true,
-        "electrode": "bipolar",
+        "electrode": "monopolar",
         "type": "train_pulses",
         "waveform": "biphasic",
         "target": "CA1",
@@ -270,8 +270,8 @@
             "vmax": 1.0
         }
     },
-    "git_short_hash": "af7c9fb",
-    "timestamp": "Wed Feb 11 13:37:15 2026",
+    "git_short_hash": "0b01d4c",
+    "timestamp": "Wed Feb 11 13:47:46 2026",
     "git_branch": "main",
-    "git_hash": "af7c9fb1670eb9e4d4057e24b2d39db1b620aa53"
+    "git_hash": "0b01d4cad33283b333a4b9bf5dfb1f06a6a3e441"
 }

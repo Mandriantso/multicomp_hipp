@@ -245,7 +245,7 @@ _data = {
     },
     "stimulation": {
         "status": True, # False -> no stimulation; True -> stimulation is on
-        "electrode": "bipolar",
+        "electrode": "monopolar",
         "type": "train_pulses",
         "waveform": "biphasic",    
         "target": "CA1",
