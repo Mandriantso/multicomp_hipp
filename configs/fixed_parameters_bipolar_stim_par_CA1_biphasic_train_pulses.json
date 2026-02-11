@@ -1,0 +1,284 @@
+{
+    "seed_val": 42,
+    "areas": {
+        "EC": {
+            "Pyramidal": {
+                "N": 50,
+                "type": "Exc",
+                "noise": {
+                    "sigma": 0.01,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "Basket": {
+                "N": 6,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.01,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "OLM": {
+                "N": 2,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.0025,
+                    "mean": 0,
+                    "tau": 25
+                }
+            }
+        },
+        "DG": {
+            "Granule": {
+                "N": 100,
+                "type": "Exc",
+                "noise": {
+                    "sigma": 0.01,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "Basket": {
+                "N": 3,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.01,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "HIPP": {
+                "N": 1,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.0025,
+                    "mean": 0,
+                    "tau": 25
+                }
+            }
+        },
+        "CA3": {
+            "Pyramidal": {
+                "N": 26,
+                "type": "Exc",
+                "noise": {
+                    "sigma": 0.0001,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "Basket": {
+                "N": 3,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.01,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "OLM": {
+                "N": 1,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.0025,
+                    "mean": 0,
+                    "tau": 25
+                }
+            }
+        },
+        "CA1": {
+            "Pyramidal": {
+                "N": 100,
+                "type": "Exc",
+                "noise": {
+                    "sigma": 0.01,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "Basket": {
+                "N": 9,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.01,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "OLM": {
+                "N": 3,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.0025,
+                    "mean": 0,
+                    "tau": 25
+                }
+            }
+        },
+        "Sub": {
+            "Pyramidal": {
+                "N": 50,
+                "type": "Exc",
+                "noise": {
+                    "sigma": 0.01,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "Basket": {
+                "N": 6,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.01,
+                    "mean": 0,
+                    "tau": 25
+                }
+            },
+            "OLM": {
+                "N": 2,
+                "type": "Inh",
+                "noise": {
+                    "sigma": 0.0025,
+                    "mean": 0,
+                    "tau": 25
+                }
+            }
+        }
+    },
+    "input": {
+        "status": true,
+        "type": "oscillatory",
+        "target": "CA3",
+        "rate": 6,
+        "amplitude": 0.093,
+        "onset": 1000,
+        "duration": 4000
+    },
+    "connectivity": {
+        "intra": {
+            "EC": {
+                "syn_distance": {
+                    "Pyramidal": 207.645,
+                    "Basket": 383.475,
+                    "OLM": 1057.695
+                }
+            },
+            "DG": {
+                "syn_distance": {
+                    "Granule": 526.005,
+                    "Basket": 130.71,
+                    "HIPP": 568.34
+                }
+            },
+            "CA3": {
+                "syn_distance": {
+                    "Pyramidal": 590.505,
+                    "Basket": 233.13,
+                    "OLM": 813.8249999999999
+                }
+            },
+            "CA1": {
+                "syn_distance": {
+                    "Pyramidal": 325.02,
+                    "Basket": 264.33,
+                    "OLM": 1057.695
+                },
+                "weight": {
+                    "Pyramidal": {
+                        "Pyramidal": 0.0,
+                        "Basket": 0.009,
+                        "OLM": 0.0018
+                    },
+                    "Basket": {
+                        "Pyramidal": 0.036,
+                        "Basket": 0.0018,
+                        "OLM": 0.0
+                    },
+                    "OLM": {
+                        "Pyramidal": 0.036,
+                        "Basket": 0.0,
+                        "OLM": 0.0
+                    }
+                }
+            },
+            "Sub": {
+                "syn_distance": {
+                    "Pyramidal": 1092.0149999999999,
+                    "Basket": 396.495,
+                    "OLM": 1586.5425
+                }
+            }
+        },
+        "inter": {
+            "CA3-CA1": {
+                "syn_distance": 309.165,
+                "weight": 0.021599999999999998
+            }
+        }
+    },
+    "synapses": {
+        "threshold": -20,
+        "delay": 1.0,
+        "AMPA": {
+            "tau1": 0.5,
+            "tau2": 3,
+            "e": 0
+        },
+        "GABA-A": {
+            "tau1": 1,
+            "tau2": 8,
+            "e": -75
+        }
+    },
+    "stimulation": {
+        "status": true,
+        "electrode": "bipolar",
+        "type": "train_pulses",
+        "waveform": "biphasic",
+        "target": "CA1",
+        "coordinates": [
+            [
+                265.02,
+                4721.37,
+                0.0
+            ],
+            [
+                2337.461,
+                5886.57,
+                0.0
+            ]
+        ],
+        "rho": 300,
+        "duration": 2000,
+        "onset": 2000,
+        "I": 1.5,
+        "pulse_width": 0.3,
+        "frequency": 50
+    },
+    "simulation": {
+        "duration": 5000.0,
+        "dt": 0.025,
+        "v_init": -65,
+        "seed_noise": 0,
+        "celsius": 35
+    },
+    "analysis": {
+        "firing_rate": {
+            "winsize_fr": 5,
+            "overlap_fr": 0.9
+        },
+        "spectrogram": {
+            "window_size": 1,
+            "window_size_Pxx": 1000,
+            "overlap_Pxx": 0.9,
+            "vmin": 1e-12,
+            "vmax": 1.0
+        }
+    },
+    "git_short_hash": "43938a7",
+    "timestamp": "Wed Feb 11 14:16:07 2026",
+    "git_branch": "main",
+    "git_hash": "43938a7f116a7980429de3e09d7ccb55cb9bbef5"
+}
