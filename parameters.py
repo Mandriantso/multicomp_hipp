@@ -251,8 +251,8 @@ _data = {
         "target": "CA1",
         "coordinates": [
             
-                1335.02,
-                5506.92,
+                2718.83,
+                2845.14,
                 0.0
             
         ],  
@@ -368,7 +368,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='fixed_parameters_monopolar_stim_outer_CA1_biphasic_train_pulses',
+                        default='fixed_parameters_monopolar_stim_inner_CA1_biphasic_train_pulses',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
