@@ -105,7 +105,7 @@ parser.add_argument('-p', '--parameters',
                     nargs='?',
                     metavar='-p',
                     type=str,
-                    default=os.path.join('configs', 'fixed_parameters_monopolar_stim_outer_CA1_biphasic_train_pulses.json'), #TODO: change parameters file
+                    default=os.path.join('configs', 'fixed_parameters_monopolar_stim_inner_CA1_biphasic_train_pulses.json'), #TODO: change parameters file
                     help='Parameters file (json format)')
 
 parser.add_argument('-sd', '--save_dir',
@@ -124,7 +124,7 @@ try:
     print('Using "{0}"'.format(filename))
 except Exception as e:
     print(e)
-    print('Using "fixed_parameters_monopolar_stim_outer_CA1.json"')
+    print('Using "fixed_parameters_bipolar_stim_par_CA1_biphasic_train_pulses.json"')
     data = parameters._data
 parameters.dump(data) # TODO: update file after changing weights ?
 print()
@@ -160,7 +160,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 50Hz 0.300ms 1.5mA"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 50Hz 0.300ms 1.5mA - inner CA1"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -843,7 +843,7 @@ stim_amp = h.Vector()
 stim_time = h.Vector()
 
 if settings.stim_type == "train_pulses":
-    stim_amp, stim_time = train_pulse(stim_amp, stim_time, settings.stim_amp, settings.stim_onset, settings.stim_duration, settings.stim_pulse_width, settings.stim_freq, settings.stim_waveform, settings.duration) # settings.stim_onset
+    stim_amp, stim_time = train_pulse(stim_amp, stim_time, settings.stim_amp, settings.stim_onset, settings.stim_dur, settings.stim_pulse_width, settings.stim_freq, settings.stim_waveform, settings.duration) # settings.stim_onset
 else:
     stim_amp, stim_time = single_pulse(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp, settings.duration)
 
@@ -1219,13 +1219,13 @@ if rank == 0:
                         ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                         x_lim=[0, settings.duration],
                         stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs,
-                        **git_kwargs)
+                        sizebar=False, **git_kwargs)
         
         save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
                     ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                     x_lim=[settings.stim_onset - 600, settings.stim_onset+settings.stim_dur+1000], size_raster=1., 
-                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs,
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs, sizebar=False,
                     **git_kwargs) # last second
 
     else:
@@ -1233,14 +1233,14 @@ if rank == 0:
                         [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
                         ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                         x_lim=[0, settings.duration],
-                        stim_time=settings.stim_onset, stim_dur=settings.stim_dur, 
+                        stim_time=settings.stim_onset, stim_dur=settings.stim_dur, sizebar=False,
                         **git_kwargs)
         
         save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
                     [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
                     ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                     x_lim=[settings.stim_onset - 600, settings.stim_onset+settings.stim_dur+1000], size_raster=1., 
-                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, 
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, sizebar=False,
                     **git_kwargs) # last second
 
     np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
