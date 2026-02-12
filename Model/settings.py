@@ -84,11 +84,13 @@ stim_dur = 1 # (ms)
 stim_onset = 100 # (ms)
 stim_amp = [] # (mA)
 stim_electrode = None # monopolar/bipolar
-stim_type = None # single_pulse/train_pulses
+stim_type = None # single_pulse/train_pulses/theta_burst
 stim_waveform = None # monophasic/biphasic
 stim_freq = None # frequency if train of pulses
 stim_pulse_width = None # ms
 stim_interphase = 0 # ms time between two phases if biphasic stim
+stim_n_pulses = None # number of pulses within burst if theta_burst stim
+stim_theta_frequency = None # burst frequency if theta_burst stim
 ATTACHED__ = 0
 
 # Reproducibility settings
@@ -202,7 +204,7 @@ def init(data):
     input_duration = data['input']['duration']
 
     # extracellular stimulation parameters
-    global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, stim_type, stim_electrode, stim_waveform, stim_freq, stim_pulse_width, stim_interphase, ATTACHED__
+    global stim_status, stim_dur, stim_amp, stim_onset, stim_pos, stim_type, stim_electrode, stim_waveform, stim_freq, stim_pulse_width, stim_interphase, stim_n_pulses, stim_theta_frequency, ATTACHED__
     stim_status = data['stimulation']['status']
     stim_dur = data['stimulation']['duration']
     stim_amp = data['stimulation']['I']
@@ -214,6 +216,8 @@ def init(data):
     stim_freq = data['stimulation']['frequency']
     stim_pulse_width = data['stimulation']['pulse_width']
     stim_interphase = data['stimulation']['interphase']
+    stim_n_pulses = data['stimulation']['n_pulses']
+    stim_theta_frequency = data['stimulation']['theta_frequency']
 
     ATTACHED__ = 0
 

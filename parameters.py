@@ -245,29 +245,25 @@ _data = {
     },
     "stimulation": {
         "status": True, # False -> no stimulation; True -> stimulation is on
-        "electrode": "bipolar",
-        "type": "train_pulses",
+        "electrode": "monopolar",
+        "type": "theta_burst",
         "waveform": "biphasic",    
         "target": "CA1",
         "coordinates": [
-            [
-                265.02,
-                4721.37,
-                0.0
-            ],
-            [
-                2337.461,
-                5886.57,
-                0.0
-            ]
+            1335.02,
+            5506.92,
+            0.0
         ],
         "rho": 300, # medium resistivity (ohm cm)
         "duration": 2000, # (ms) 
         "onset": 2000, # (ms) 
         "I": 6, # (mA) stimulation amplitude
-        "pulse_width": 0.300, #ms
+        "pulse_width": 0.200, #ms
         "interphase": 0.100, # ms
-        "frequency": 130 # Hz
+        "frequency": 100, # Hz
+        "n_pulses": 4, # number of pulses within burst
+        "theta_frequency": 5 # Hz
+
     },
     "simulation": {
         "duration": 5000.0, # (ms)
@@ -374,7 +370,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='fixed_parameters_bipolar_stim_par_CA1_biphasic_train_pulses',
+                        default='fixed_parameters_monopolar_stim_outer_CA1_biphasic_theta_burst',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
