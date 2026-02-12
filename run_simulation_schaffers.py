@@ -1179,7 +1179,7 @@ if rank == 0:
     gids_sca = [2*n+212 for n in range(26)]
     arg_starts = []
     for gid in gids_sca:
-        idx = np.argwhere(inputs_sca[gid] > 0)[0][0]
+        idx = np.argwhere(np.array(inputs_sca[gid]) > 0)[0][0]
         arg_starts.append(idx)
 
     arg_min = np.argmin(np.array(arg_starts))
