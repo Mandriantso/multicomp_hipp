@@ -160,7 +160,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 5Hz 0.300ms 0.100ms 1.5mA - bipolar par CA1"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 5Hz 0.300ms 0.100ms 6mA - bipolar par CA1"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -1179,14 +1179,14 @@ if rank == 0:
     gids_sca = [2*n+212 for n in range(26)]
     arg_starts = []
     for gid in gids_sca:
-        idx = np.argwhere(inputs_sca[str(gid)] > 0)[0][0]
+        idx = np.argwhere(inputs_sca[gid] > 0)[0][0]
         arg_starts.append(idx)
 
     arg_min = np.argmin(np.array(arg_starts))
     arg_max = np.argmax(np.array(arg_starts))
 
     t_input = inputs_sca['time']
-    inputs = [inputs_sca[str(gids_sca[arg_min])], inputs_sca[str(gids_sca[arg_max])]]
+    inputs = [inputs_sca[gids_sca[arg_min]], inputs_sca[gids_sca[arg_max]]]
 
     if settings.stim_status:
         if settings.stim_electrode == "bipolar":
