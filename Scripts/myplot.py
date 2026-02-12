@@ -18,24 +18,29 @@ def plot_watermark(fig, **git_kwargs):
              transform=fig.transFigure, ha="right", va="top", clip_on=False,
              color = "black", family="Arial", weight="400", size="xx-small")
 
-def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
+def plot_raster(t_spike_monitors: list, id_spike_monitors: list, t_input: np.array, id_inputs: list,
                  colors: list, cell_types: list[str], x_lim: list[float] = None, y_lim: list[float] = None,
                  stim_loc: list = None, stim_time: float = None, stim_dur: float = None, size_raster : float = 0.5,
-                 **git_kwargs):
+                 sizebar=True, **git_kwargs):
     
     # create figure
     fig, ax = plt.subplots(1, 1, figsize=(12,7))
 
     # make raster plot
     # check if several spike_monitors or just one
+    for i in range(len(id_inputs)):
+        ax.plot(t_input, id_inputs[i]*30+140, color='black', linewidth=0.7)
+
     for i in range(len(t_spike_monitors)):
         ax.scatter(t_spike_monitors[i], id_spike_monitors[i], s=size_raster, marker='o', color=colors[i])
+
 
     # plot span for stimulation if stimulation
     if stim_time and stim_dur:
         ax.axvline(x=stim_time, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         ax.axvline(x=stim_time + stim_dur, color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
         ax.axvspan(stim_time, stim_time + stim_dur, alpha=.5, color=list(plt.cm.tab20c(19)[:3]), zorder=0)
+
         if stim_loc:
             for i in range(len(stim_loc)):
                 ax.axhline(y=stim_loc[i], color=list(plt.cm.tab20c(16)[:3]), ls='--', linewidth=1)
@@ -50,10 +55,13 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
     ax.spines['left'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    # ax.spines['bottom'].set_visible(False)
     ax.axes.get_yaxis().set_visible(False)
-    # ax.axes.get_xaxis().set_visible(False)
-    add_sizebar(ax, [x_lim[1]-250, x_lim[1]], [-1, -1], 'black', '250 ms')
+    if sizebar:
+        add_sizebar(ax, [x_lim[1]-250, x_lim[1]], [-1, -1], 'black', '250 ms')
+        ax.spines['bottom'].set_visible(False)
+        ax.axes.get_xaxis().set_visible(False)
+    else:
+        ax.set_xlabel('Time (ms)')
 
     # set legend
     custom_lines = []
@@ -69,13 +77,17 @@ def plot_raster(t_spike_monitors: list, id_spike_monitors: list,
     plt.show()
 
 
-def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
+def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list, t_input: np.array, id_inputs: list,
                  colors: list, cell_types: list[str], x_lim: list[float] = None, y_lim: list[float] = None,
                  stim_loc: list = None, stim_time: float = None, stim_dur: float = None, size_raster: float = 0.5,
-                 **git_kwargs):
+                 sizebar=True, **git_kwargs):
 
     # create figure
-    fig, ax = plt.subplots(1, 1, figsize=(6,9))
+    fig, ax = plt.subplots(1, 1, figsize=(12,7))
+
+    # plot inputs
+    for i in range(len(id_inputs)):
+        ax.plot(t_input, id_inputs[i]*30+140, color='black', linewidth=0.7)
 
     # make raster plot
     # check if several spike_monitors or just one
@@ -98,14 +110,18 @@ def save_raster(name_fig: str, t_spike_monitors: list, id_spike_monitors: list,
         ax.set_xlim(x_lim[0], x_lim[1])
     if y_lim:
         ax.set_ylim(y_lim[0], y_lim[1])
-    # ax.set_xlabel('Time (ms)')
+    
     ax.spines['left'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.spines['bottom'].set_visible(False)
     ax.axes.get_yaxis().set_visible(False)
-    ax.axes.get_xaxis().set_visible(False)
-    add_sizebar(ax, [x_lim[1]-250, x_lim[1]], [-1, -1], 'black', '250 ms')
+
+    if sizebar:
+        add_sizebar(ax, [x_lim[1]-250, x_lim[1]], [-1, -1], 'black', '250 ms')
+        ax.spines['bottom'].set_visible(False)
+        ax.axes.get_xaxis().set_visible(False)
+    else:
+        ax.set_xlabel('Time (ms)')
 
     # set legend
     custom_lines = []
@@ -188,27 +204,48 @@ def plot_specgram(t: list, f: list, sxx: list, cell_types: list[str], xlim: list
     imgs = [None] * len(t)
     cbars = [None] * len(t)
     fig, axs = plt.subplots(len(t), 1, figsize=(6, 9), sharex=True, sharey=True)
-    for i in range(len(t)):
-        # vmax = max(max(sxx[0].max(), sxx[1].max()), sxx[2].max())
-        imgs[i] = axs[i].pcolormesh(t[i], f[i], sxx[i]/sxx[i].max(), shading='auto', cmap='inferno')
+    if len(t) == 1:
+        imgs = axs.pcolormesh(t[0], f[0], sxx[0]/sxx[0].max(), shading='auto', cmap='inferno')
 
-        axs[i].text(0.02, 0.9, cell_types[i], transform=axs[i].transAxes, color='white', verticalalignment='top')
+        axs.text(0.02, 0.9, cell_types[0], transform=axs.transAxes, color='white', verticalalignment='top')
 
-        axs[i].axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+        axs.axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
 
-        axs[i].set_ylabel('Frequency (Hz)')
+        axs.set_ylabel('Frequency (Hz)')
 
-        cbars[i] = fig.colorbar(imgs[i], ax=axs[i])
-        cbars[i].set_label("Power (normalized unit)")
+        cbars = fig.colorbar(imgs, ax=axs)
+        cbars.set_label("Power (normalized unit)")
 
-    axs[-1].set_xlabel('Time (s)')
+        axs.set_xlabel('Time (s)')
 
-    if xlim:
-        axs[-1].set_xlim(xlim)
-    if ylim:
-        axs[-1].set_ylim(ylim)
+        if xlim:
+            axs.set_xlim(xlim)
+        if ylim:
+            axs.set_ylim(ylim)
+        else:
+            axs.set_ylim([0, 200])
     else:
-        axs[-1].set_ylim([0, 200])
+        for i in range(len(t)):
+            # vmax = max(max(sxx[0].max(), sxx[1].max()), sxx[2].max())
+            imgs[i] = axs[i].pcolormesh(t[i], f[i], sxx[i]/sxx[i].max(), shading='auto', cmap='inferno')
+
+            axs[i].text(0.02, 0.9, cell_types[i], transform=axs[i].transAxes, color='white', verticalalignment='top')
+
+            axs[i].axhline(y=30, xmin=0.0, xmax=5.0, color='white', linestyle='dashed', linewidth=2)
+
+            axs[i].set_ylabel('Frequency (Hz)')
+
+            cbars[i] = fig.colorbar(imgs[i], ax=axs[i])
+            cbars[i].set_label("Power (normalized unit)")
+
+        axs[-1].set_xlabel('Time (s)')
+
+        if xlim:
+            axs[-1].set_xlim(xlim)
+        if ylim:
+            axs[-1].set_ylim(ylim)
+        else:
+            axs[-1].set_ylim([0, 200])
 
     if git_kwargs:
         plot_watermark(fig, **git_kwargs)
