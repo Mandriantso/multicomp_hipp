@@ -160,7 +160,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 50Hz 0.300ms 0.100ms 1.5mA - bipolar par CA1"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 5Hz 0.300ms 0.100ms 1.5mA - bipolar par CA1"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -1175,6 +1175,19 @@ if rank == 0:
     save_all_nodes_data(os.path.join(dirs['data'], 'CA3_all_nodes_Vm'), np.array(t_vec), merged_data_nodes_Vm)
     save_all_nodes_data(os.path.join(dirs['data'], 'CA3_all_nodes_i'), np.array(t_vec), merged_data_nodes_i)
 
+    ### get first and last theta input
+    gids_sca = [2*n+212 for n in range(26)]
+    arg_starts = []
+    for gid in gids_sca:
+        idx = np.argwhere(inputs_sca[str(gid)] > 0)[0][0]
+        arg_starts.append(idx)
+
+    arg_min = np.argmin(np.array(arg_starts))
+    arg_max = np.argmax(np.array(arg_starts))
+
+    t_input = inputs_sca['time']
+    inputs = [inputs_sca[str(gids_sca[arg_min])], inputs_sca[str(gids_sca[arg_max])]]
+
     if settings.stim_status:
         if settings.stim_electrode == "bipolar":
             stim_loc_pyr0 = np.sqrt((ca1_pyr_coords[:,0] - settings.stim_pos[0][0])**2+(ca1_pyr_coords[:,1] - settings.stim_pos[0][1])**2).argmin()
@@ -1214,31 +1227,31 @@ if rank == 0:
 
             stim_locs = [stim_loc_pyr, stim_loc_bc, stim_loc_sca]
 
-        save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
-                        [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
-                        ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
+        save_raster(name_fig=os.path.join(dirs['figures'], 'raster_plot.png'), t_spike_monitors=[t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
+                        id_spike_monitors=[id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], t_input=t_input, id_inputs=inputs, 
+                        colors=['C0', 'C3', 'C1', 'C2'], cell_types=['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                         x_lim=[0, settings.duration],
                         stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs,
                         sizebar=False, **git_kwargs)
         
-        save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
-                    [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
-                    ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
+        save_raster(name_fig=os.path.join(dirs['figures'], 'raster_plot_last_second.png'), t_spike_monitors=[t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
+                    id_spike_monitors=[id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], t_input=t_input, id_inputs=inputs,
+                    colors=['C0', 'C3', 'C1', 'C2'], cell_types=['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                     x_lim=[settings.stim_onset - 600, settings.stim_onset+settings.stim_dur+1000], size_raster=1., 
                     stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs, sizebar=False,
                     **git_kwargs) # last second
 
     else:
-        save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
-                        [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
-                        ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
+        save_raster(name_fig=os.path.join(dirs['figures'], 'raster_plot.png'), t_spike_monitors=[t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
+                        id_spike_monitors=[id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], t_input=t_input, id_inputs=inputs,
+                        colors=['C0', 'C3', 'C1', 'C2'], cell_types=['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                         x_lim=[0, settings.duration],
                         stim_time=settings.stim_onset, stim_dur=settings.stim_dur, sizebar=False,
                         **git_kwargs)
         
-        save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
-                    [id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], 
-                    ['C0', 'C3', 'C1', 'C2'], ['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
+        save_raster(name_fig=os.path.join(dirs['figures'], 'raster_plot_last_second.png'), t_spike_monitors=[t_spikes_pyr, t_spikes_bc, t_spikes_olm, t_spikes_sca_last],
+                    id_spike_monitors=[id_spikes_pyr, id_spikes_bc, id_spikes_olm, id_spikes_sca_last], t_input=t_input, id_inputs=inputs,
+                    colors=['C0', 'C3', 'C1', 'C2'], cell_types=['pyramidal cells', 'basket cells', 'olm cells', 'schaffer collaterals'],
                     x_lim=[settings.stim_onset - 600, settings.stim_onset+settings.stim_dur+1000], size_raster=1., 
                     stim_time=settings.stim_onset, stim_dur=settings.stim_dur, sizebar=False,
                     **git_kwargs) # last second
