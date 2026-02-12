@@ -264,7 +264,7 @@ _data = {
         "rho": 300, # medium resistivity (ohm cm)
         "duration": 2000, # (ms) 
         "onset": 2000, # (ms) 
-        "I": 1.5, # (mA) stimulation amplitude
+        "I": 6, # (mA) stimulation amplitude
         "pulse_width": 0.300, #ms
         "interphase": 0.100, # ms
         "frequency": 5 # Hz

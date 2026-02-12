@@ -253,7 +253,7 @@
         "rho": 300,
         "duration": 2000,
         "onset": 2000,
-        "I": 1.5,
+        "I": 6,
         "pulse_width": 0.3,
         "interphase": 0.1,
         "frequency": 5
@@ -278,8 +278,8 @@
             "vmax": 1.0
         }
     },
-    "git_short_hash": "f24bc57",
-    "timestamp": "Thu Feb 12 16:29:32 2026",
+    "git_short_hash": "b49c23e",
+    "timestamp": "Thu Feb 12 16:57:57 2026",
     "git_branch": "main",
-    "git_hash": "f24bc57457297a6a047f02580b8d5cc506cea6c3"
+    "git_hash": "b49c23e9b2e0d4bcb61993ec5de722f85934eeee"
 }
