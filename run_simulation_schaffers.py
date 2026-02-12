@@ -105,7 +105,7 @@ parser.add_argument('-p', '--parameters',
                     nargs='?',
                     metavar='-p',
                     type=str,
-                    default=os.path.join('configs', 'fixed_parameters_bipolar_stim_perp_CA1_biphasic_train_pulses.json'), 
+                    default=os.path.join('configs', 'fixed_parameters_bipolar_stim_par_CA1_biphasic_train_pulses.json'), 
                     help='Parameters file (json format)')
 
 parser.add_argument('-sd', '--save_dir',
@@ -160,7 +160,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 50Hz 0.300ms 1.5mA - bipolar perp CA1"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test train pulses 130Hz 0.300ms 0.100ms 1.5mA - bipolar par CA1"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -843,7 +843,7 @@ stim_amp = h.Vector()
 stim_time = h.Vector()
 
 if settings.stim_type == "train_pulses":
-    stim_amp, stim_time = train_pulse(stim_amp, stim_time, settings.stim_amp, settings.stim_onset, settings.stim_dur, settings.stim_pulse_width, settings.stim_freq, settings.stim_waveform, settings.duration) # settings.stim_onset
+    stim_amp, stim_time = train_pulse(stim_amp, stim_time, settings.stim_amp, settings.stim_onset, settings.stim_dur, settings.stim_pulse_width, settings.stim_freq, settings.stim_waveform, settings.duration, settings.stim_interphase) # settings.stim_onset
 else:
     stim_amp, stim_time = single_pulse(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp, settings.duration)
 
@@ -1109,7 +1109,7 @@ if rank == 0:
         f.write("\n\nSimulation parameters\n")
         f.write("-------------------------\n")
         f.write("remark :\n")
-        f.write("Test de train pulses biphasic pour une amplitude de 1.5 sur une durée de 2s\n")
+        f.write("Test de train pulses biphasic pour une amplitude de 1.5 sur une durée de 2s. Test avec une interphase de 100µs pour comparer avec stim sans interphase\n")
         f.write("Les paramètres utilisés sont les paramètres fixés après recherche de paramètres")
         f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
         f.write("BC - Pyr weight : {}\n".format(settings.w_CA1[1][0]))
@@ -1246,14 +1246,14 @@ if rank == 0:
     np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
     np.savez(os.path.join(dirs['data'], 'stimulation.npz'), t=np.array(stim_time), amp=np.array(stim_amp))
 
-    fig1, ax1 = plt.subplots(1,1,figsize=(9,3))
-    ax1.plot(np.array(stim_time), np.array(stim_amp), color='black')
-    ax1.set_xlabel("Time (ms)")
-    ax1.set_ylabel("nA")
-    plot_watermark(fig1, **git_kwargs)
-    plt.savefig(os.path.join(dirs['figures'], 'stimulation.png'), bbox_inches="tight")
-    plt.clf()
-    plt.close()
+    # fig1, ax1 = plt.subplots(1,1,figsize=(9,3))
+    # ax1.plot(np.array(stim_time), np.array(stim_amp), color='black')
+    # ax1.set_xlabel("Time (ms)")
+    # ax1.set_ylabel("nA")
+    # plot_watermark(fig1, **git_kwargs)
+    # plt.savefig(os.path.join(dirs['figures'], 'stimulation.png'), bbox_inches="tight")
+    # plt.clf()
+    # plt.close()
 
     # fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
     # ax2.plot(np.array(t_vec), np.array(osc_amp), color='red')
