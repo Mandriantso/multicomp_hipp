@@ -182,3 +182,104 @@ def train_pulse(stim_amp, stim_time, amp, onset, duration, pulse_width, frequenc
 		stim_time.x[len_vec_stim-1] = sim_dur
 
 	return stim_amp, stim_time
+
+
+def theta_burst(stim_amp, stim_time, amp, onset, duration, pulse_width, n_pulses, theta_frequency, frequency, stim_type, sim_dur, interphase=0):
+	"""
+	Docstring for theta_burst
+	
+	:param stim_amp: Description
+	:param stim_time: Description
+	:param amp: Description
+	:param onset: Description
+	:param duration: Description
+	:param pulse_width: Description
+	:param n_pulses: number of pulses within the burst pattern
+	:param theta_frequency: Description
+	:param frequency: fequency within the burst pattern
+	:param stim_type: Description
+	:param sim_dur: Description
+	:param interphase: Description
+	"""
+	# determine number of burst patterns
+	n_patterns = int(duration*theta_frequency*1e-3)
+
+	if stim_type == 'biphasic':
+		dur_inter_pulse = 1/(frequency*1e-3) - (2*pulse_width+interphase)
+		dur_pattern = 2*pulse_width + interphase + dur_inter_pulse
+
+		dur_inter_burst = 1/(theta_frequency*1e-3) - (n_pulses*(2*pulse_width) + (n_pulses-1)*interphase)
+		dur_burst = dur_pattern + dur_inter_burst
+
+		len_pattern_biphasic = 8
+		len_pattern_tot = len_pattern_biphasic * n_pulses
+
+		len_vec_stim = len_pattern_tot * n_patterns + 2
+
+		# amplitude vector
+		stim_amp.resize(len_vec_stim)
+
+		for j in range(n_patterns):
+			for i in range(n_pulses):
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i] = 0
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i+1] = 0
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i+2] = 1
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i+3] = 1
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i+4] = 0
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i+5] = 0
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i+6] = -1
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i+7] = -1
+		stim_amp.mul(amp)
+
+		# time vector
+		stim_time.resize(len_vec_stim)
+		stim_time.x[0] = 0
+		stim_time.x[1] = onset
+
+		for j in range(n_patterns):
+			for i in range(n_pulses):	
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+2] = onset + j*dur_burst + i*dur_pattern
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+3] = onset + j*dur_burst + i*dur_pattern + pulse_width
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+4] = onset + j*dur_burst + i*dur_pattern + pulse_width
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+5] = onset + j*dur_burst + i*dur_pattern + pulse_width + interphase
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+6] = onset + j*dur_burst + i*dur_pattern + pulse_width + interphase
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+7] = onset + j*dur_burst + i*dur_pattern + pulse_width + interphase + pulse_width 
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+8] = onset + j*dur_burst + i*dur_pattern + pulse_width + interphase + pulse_width 
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+9] = onset + j*dur_burst + i*dur_pattern + dur_pattern
+			stim_time.x[len_pattern_tot*j+len_pattern_biphasic*(n_pulses-1)+9] = onset + j*dur_burst + dur_burst 
+		stim_time.x[len_vec_stim-1] = sim_dur
+	else:
+		dur_inter_pulse = 1/(frequency*1e-3) - pulse_width
+		dur_pattern = pulse_width + dur_inter_pulse
+
+		dur_inter_burst = 1/(theta_frequency*1e-3) - n_pulses*pulse_width
+		dur_burst = dur_pattern + dur_inter_burst
+
+		len_pattern_biphasic = 4
+		len_pattern_tot = len_pattern_biphasic * n_pulses
+
+		len_vec_stim = len_pattern_tot * n_patterns + 2
+
+		# amplitude vector
+		stim_amp.resize(len_vec_stim)
+
+		for j in range(n_patterns):
+			for i in range(n_pulses):
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i+2] = 1
+				stim_amp.x[len_pattern_tot*j+len_pattern_biphasic*i+3] = 1
+		stim_amp.mul(amp)
+
+		# time vector
+		stim_time.resize(len_vec_stim)
+		stim_time.x[0] = 0
+		stim_time.x[1] = onset
+
+		for j in range(n_patterns):
+			for i in range(n_pulses):	
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+2] = onset + j*dur_burst + i*dur_pattern
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+3] = onset + j*dur_burst + i*dur_pattern + pulse_width
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+4] = onset + j*dur_burst + i*dur_pattern + pulse_width 
+				stim_time.x[len_pattern_tot*j+len_pattern_biphasic*i+5] = onset + j*dur_burst + i*dur_pattern + dur_pattern
+			stim_time.x[len_pattern_tot*j+len_pattern_biphasic*(n_pulses-1)+5] = onset + j*dur_burst + dur_burst 
+		stim_time.x[len_vec_stim-1] = sim_dur
+	return stim_amp, stim_time
