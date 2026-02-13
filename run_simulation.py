@@ -90,24 +90,24 @@ def _set_v_init():
         r = random.uniform(-10, 10)
         for sec in cell_.all:
             for seg in sec:
-                seg.v = settings.sim_v_init + r  
+                seg.v = settings.sim_v_init + r
 
 
 # Parse arguments
-parser = argparse.ArgumentParser(description='Multicomp model parameters search')
+parser = argparse.ArgumentParser(description='Network without schaffer collaterals - test stimulation parameters')
 
 parser.add_argument('-p', '--parameters',
                     nargs='?',
                     metavar='-p',
                     type=str,
-                    default=os.path.join('configs', 'default_parameters_1.json'),
+                    default=os.path.join('configs', 'fixed_parameters_bipolar_stim_par_CA1_biphasic_train_pulses.json'),
                     help='Parameters file (json format)')
 
 parser.add_argument('-sd', '--save_dir',
                     nargs='?',
                     metavar='-sd',
                     type=str,
-                    default='results_paper_good_OLM',
+                    default='network_no_schaffers_results',
                     help='Destination directory to save the results')
 
 args = parser.parse_args()
@@ -119,9 +119,9 @@ try:
     print('Using "{0}"'.format(filename))
 except Exception as e:
     print(e)
-    print('Using "default_parameters_1.json"')
+    print('Using "fixed_parameters_bipolar_stim_par_CA1_biphasic_train_pulses.json"')
     data = parameters._data
-parameters.dump(data) # TODO: update file after changing weights ?
+parameters.dump(data) 
 print()
 
 # Settings initialization
@@ -155,7 +155,7 @@ if not os.path.isdir(dirs['results']) and rank == 0:
     sys.stdout.flush()
     os.makedirs(dirs['results'])
 
-dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S no_stim"))
+dirs['save_dir'] = os.path.join(dirs['results'], datetime.now().strftime(f"%Y_%m_%d %HH%MM%S test biphasic train pulse sans SCA 130Hz 0.300ms 0.100ms 6mA - bipolar par CA1"))
 if not os.path.isdir(dirs['save_dir']) and rank == 0:
     print('[+] Creating directory', dirs['save_dir'])
     sys.stdout.flush()
@@ -195,15 +195,6 @@ ca1_coordinates = os.path.join(coordinates_dir, 'ca1')
 ca1_pyr_coords = np.load(os.path.join(ca1_coordinates, 'pyr_coordinates.npy'))
 ca1_bc_coords = np.load(os.path.join(ca1_coordinates, 'bc_coordinates.npy'))
 ca1_olm_coords = np.load(os.path.join(ca1_coordinates, 'olm_coordinates.npy'))
-
-# ca1_pyr_coordinates_flat = np.load(os.path.join(ca1_coordinates, 'pyr_coordinates_flat_constrained.npy'))
-# ca1_bc_coordinates_flat = np.load(os.path.join(ca1_coordinates, 'bc_coordinates_flat.npy'))
-# ca1_olm_coordinates_flat = np.load(os.path.join(ca1_coordinates, 'olm_coordinates_flat.npy'))
-
-# sort by x
-# ca1_pyr_coordinates_flat = ca1_pyr_coordinates_flat[ca1_pyr_coordinates_flat[:,0].argsort()]
-# ca1_bc_coordinates_flat = ca1_bc_coordinates_flat[ca1_bc_coordinates_flat[:,0].argsort()]
-# ca1_olm_coordinates_flat = ca1_olm_coordinates_flat[ca1_olm_coordinates_flat[:,0].argsort()]
 
 # create cells
 n_pyr_ca1 = settings.N_CA1[0]
@@ -317,11 +308,6 @@ conn_mat = np.zeros((n_cells_ca1, n_cells_ca1))
 
 # using flattened coordinates
 for i in range(n_pyr_ca1):
-    # for j in range(n_pyr_ca1):
-    #     dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_pyr_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_pyr_coords[j, 6])**2)
-    #     if settings.syn_dist_CA1[0] >= dist_value and i != j and conn_mat[i, :n_pyr_ca1].sum(axis=0) < 1 and conn_mat[:n_pyr_ca1, j].sum(axis=0) < 1:
-    #         conn_mat[i, j] = 1
-
     for j in range(n_bc_ca1):
         dist_value = np.sqrt((ca1_pyr_coords[i, 5] - ca1_bc_coords[j, 5])**2 + (ca1_pyr_coords[i, 6] - ca1_bc_coords[j, 6])**2)
         if settings.syn_dist_CA1[0] >= dist_value:
@@ -636,7 +622,7 @@ for cell_ in ca1_pyr_cells: # to | from
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA1[1][0] * 0.1
+            nc_.weight[0] = settings.w_CA1[1][0]
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -647,7 +633,7 @@ for cell_ in ca1_pyr_cells: # to | from
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA1[1][0] * 0.1 
+            nc_.weight[0] = settings.w_CA1[2][0]
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -662,7 +648,7 @@ for cell_ in ca1_bc_cells:
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA1[0][1] * 2.0
+            nc_.weight[0] = settings.w_CA1[0][1] 
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -688,7 +674,7 @@ for cell_ in ca1_olm_cells:
             mt_.select("Exp2Syn")
             pp = mt_.pp_begin(sec=target_sec)
             nc_ = pc.gid_connect(pregid, pp)
-            nc_.weight[0] = settings.w_CA1[0][2] * 2.0 # try with same as BC
+            nc_.weight[0] = settings.w_CA1[0][2] 
             nc_.threshold = settings.syn_threshold
             nc_.delay = settings.syn_delay
             cell_._ncs.append(nc_)
@@ -706,19 +692,20 @@ if rank == 0:
     print('[+] Oscillatory input')
     sys.stdout.flush()
 
-# amp = 6 #0 #6.0
+amp = 6 #0 #6.0
 # osc_amp = h.Vector()
 # # setting oscillatory input current
-# for cell_ in ca1_pyr_cells:
-#     target_secs = list(cell_.lm_list)
-#     target_sec = random.choice(target_secs)
-#     input_ = oscInput(cell_, target_sec(0.5), 350, settings.duration - 350, 6, amp)
+for cell_ in ca1_pyr_cells:
+    target_secs = list(cell_.lm_list)
+    target_sec = random.choice(target_secs)
+    input_ = oscInput(cell_, target_sec(0.5), settings.input_onset, settings.input_duration, settings.input_rate, amp, noisy=False)
+    cell_._inputs_vector.record(input_._ref_i)
 # osc_amp.record(input_._ref_i)
 
 # setting current vectors
-VecT = h.Vector([0, settings.duration])
-VecStim = h.Vector([0., 1.])
-stim_amp = h.Vector()
+# VecT = h.Vector([0, settings.duration])
+# VecStim = h.Vector([0., 1.])
+# stim_amp = h.Vector()
 
 # for cell_ in ca1_cells:
 #     stim_ = h.IClamp(cell_.soma(0.5))
@@ -728,16 +715,16 @@ stim_amp = h.Vector()
 #     VecStim.play(stim_._ref_amp, VecT, 1)
 #     cell_._inputs_list.append(stim_)
 
-for cell_ in ca1_cells:
-    if 'PyramidalCell' in str(cell_):
-        stim_ = h.IClamp(cell_.soma(0.5))
-        stim_.delay = 0
-        stim_.dur = 1e9
+# for cell_ in ca1_cells:
+#     if 'PyramidalCell' in str(cell_):
+#         stim_ = h.IClamp(cell_.soma(0.5))
+#         stim_.delay = 0
+#         stim_.dur = 1e9
 
-        VecStim.play(stim_._ref_amp, VecT, 1)
-        cell_._inputs_list.append(stim_)
+#         VecStim.play(stim_._ref_amp, VecT, 1)
+#         cell_._inputs_list.append(stim_)
 
-        stim_amp.record(stim_._ref_i) # last stim_
+#         stim_amp.record(stim_._ref_i) # last stim_
 
 pc.barrier()
 
@@ -747,20 +734,27 @@ if rank == 0:
     print('-'*32)
 
 # set stim parameters
-# stim_amp = h.Vector()
-# stim_time = h.Vector()
+stim_amp = h.Vector()
+stim_time = h.Vector()
 
-# stim_amp, stim_time = stim_waveform(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp)
+if settings.stim_type == "train_pulses":
+    stim_amp, stim_time = train_pulse(stim_amp, stim_time, settings.stim_amp, settings.stim_onset, settings.stim_dur, settings.stim_pulse_width, settings.stim_freq, "monophasic", settings.duration, settings.stim_interphase) # settings.stim_onset settings.stim_waveform
+elif settings.stim_type == "theta_burst":
+    stim_amp, stim_time = theta_burst(stim_amp=stim_amp, stim_time=stim_time, amp=settings.stim_amp, onset=settings.stim_onset, duration=settings.stim_dur,
+                                      pulse_width=settings.stim_pulse_width, n_pulses=settings.stim_n_pulses, theta_frequency=settings.stim_theta_frequency,
+                                      frequency=settings.stim_freq, stim_type=settings.stim_waveform, sim_dur=settings.duration, interphase=settings.stim_interphase)
+else:
+    stim_amp, stim_time = single_pulse(stim_amp, stim_time, settings.stim_onset, settings.stim_dur, settings.stim_amp, settings.duration)
 
-# # Set extracellular stimulation
-# # set xtra mechanism in all cells
-# for cell in ca1_cells:
-#     set_xtra_mechanism(cell)
-#     if settings.stim_type == "bipolar":
-#         set_rx_bipolar(cell, settings.stim_pos[0], settings.stim_pos[1], settings.rho)
-#     else:
-#         set_rx_point_elec(cell, settings.stim_pos, settings.rho)
-#     attach_stim(cell, settings.ATTACHED__, stim_amp, stim_time)
+# Set extracellular stimulation
+# set xtra mechanism in all cells
+for cell in ca1_cells:
+    set_xtra_mechanism(cell)
+    if settings.stim_type == "bipolar":
+        set_rx_bipolar(cell, settings.stim_pos[0], settings.stim_pos[1], settings.rho)
+    else:
+        set_rx_point_elec(cell, settings.stim_pos, settings.rho)
+    attach_stim(cell, settings.ATTACHED__, stim_amp, stim_time)
 
 if rank == 0:
     print('[+] Extracellular mechanism set')
@@ -777,7 +771,7 @@ t_vec = h.Vector().record(h._ref_t)
 fih = h.FInitializeHandler(1, _set_v_init) # random initialization of Vm
 
 h.tstop = settings.duration
-h.celsius = 35
+h.celsius = settings.sim_celsius
 
 pc.set_maxstep(10)
 
@@ -818,6 +812,9 @@ local_spikes_pyr = {cell_._gid: list(cell_.spike_times) for cell_ in ca1_pyr_cel
 local_spikes_bc = {cell_._gid: list(cell_.spike_times) for cell_ in ca1_bc_cells}
 local_spikes_olm = {cell_._gid: list(cell_.spike_times) for cell_ in ca1_olm_cells}
 
+# local inputs
+local_inputs_theta = {cell_._gid: list(cell_._inputs_vector) for cell_ in ca1_pyr_cells}
+
 # send results to all processors
 all_potential_pyr = pc.py_alltoall([local_potential_pyr] + [None] * (pc.nhost() - 1))
 all_potential_bc = pc.py_alltoall([local_potential_bc] + [None] * (pc.nhost() - 1))
@@ -830,6 +827,8 @@ all_current_olm = pc.py_alltoall([local_current_olm] + [None] * (pc.nhost() - 1)
 all_spikes_pyr = pc.py_alltoall([local_spikes_pyr] + [None] * (pc.nhost() - 1))
 all_spikes_bc = pc.py_alltoall([local_spikes_bc] + [None] * (pc.nhost() - 1))
 all_spikes_olm = pc.py_alltoall([local_spikes_olm] + [None] * (pc.nhost() - 1))
+
+all_inputs_theta = pc.py_alltoall([local_inputs_theta] + [None] * (pc.nhost() - 1))
 
 if rank == 0:
     # combine the data from the various processors
@@ -844,6 +843,8 @@ if rank == 0:
     spikes_pyr = {}
     spikes_bc = {}
     spikes_olm = {}
+
+    inputs_theta = {}
 
     for data in all_potential_pyr:
         potential_pyr.update(data)
@@ -871,6 +872,9 @@ if rank == 0:
 
     for data in all_spikes_olm:
         spikes_olm.update(data)
+
+    for data in all_inputs_theta:
+        inputs_theta.update(data)
 
     # arrange spikes
     id_spikes_pyr = []
@@ -901,7 +905,7 @@ if rank == 0:
 
     window_size = 1 #ms
 
-    window_size_Pxx = 1000
+    window_size_Pxx = 150
     window_width_Pxx = int(window_size_Pxx * (1/window_size))
     overlap_Pxx = 0.9
     window_overlap_Pxx = int(window_width_Pxx*overlap_Pxx)
@@ -930,13 +934,13 @@ if rank == 0:
         f.write("-------------------------\n")
         f.write("remark :\n")
         f.write("- no Pyr - Pyr connections\n")
-        f.write("- BC - Pyr constrained to one connection max\n")
-        f.write("- Lamellar coordinates used\n")
-        f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1] * 2.0))
-        f.write("BC - Pyr weight : {}\n".format(settings.w_CA1[1][0] * 0.1))
+        f.write("Test de train de pulses biphasic bipolaire avec les paramètres de Suthana 2012 mais à 130Hz pour une amplitude de 6mA sur une durée de 2s. \n")
+        f.write("Les paramètres utilisés sont les paramètres fixés après recherche de paramètres")
+        f.write("\nPyr - BC weight : {}\n".format(settings.w_CA1[0][1]))
+        f.write("BC - Pyr weight : {}\n".format(settings.w_CA1[1][0]))
         f.write("BC - BC weight : {}\n".format(settings.w_CA1[1][1]))
-        f.write("OLM - Pyr weight : {}\n".format(settings.w_CA1[1][0] * 0.1))
-        f.write("Pyr - OLM weight : {}\n".format(settings.w_CA1[0][2] * 2.0))
+        f.write("OLM - Pyr weight : {}\n".format(settings.w_CA1[2][0]))
+        f.write("Pyr - OLM weight : {}\n".format(settings.w_CA1[0][2]))
 
         f.write("\n\nSimulation results\n")
         f.write("-------------------------\n")
@@ -964,7 +968,7 @@ if rank == 0:
         cmsh.set_clim(min(vlow), max(vhigh))
 
     save_specgram(os.path.join(dirs['figures'], 'specgram.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], **git_kwargs)
-    save_specgram(os.path.join(dirs['figures'], 'specgram_0_50.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0, 50], **git_kwargs)
+    save_specgram(os.path.join(dirs['figures'], 'specgram_0_150.png'), [tv_pyr, tv_bc, tv_olm], [fv_pyr, fv_bc, fv_olm], [pspec_pyr, pspec_bc, pspec_olm], ["pyramidal cells", "basket cells", "olm cells"], ylim=[0, 150], **git_kwargs)
 
     # save vectors
     save_membrane_potential(os.path.join(dirs['data'], 'CA1_pyr_Vm.npz'), np.array(t_vec), potential_pyr) 
@@ -975,27 +979,60 @@ if rank == 0:
     save_membrane_potential(os.path.join(dirs['data'], 'CA1_bc_i.npz'), np.array(t_vec), current_bc) 
     save_membrane_potential(os.path.join(dirs['data'], 'CA1_olm_i.npz'), np.array(t_vec), current_olm) 
 
+    save_membrane_potential(os.path.join(dirs['data'], 'theta_inputs.npz'), np.array(t_vec), inputs_theta)  
+
     np.savez(os.path.join(dirs['data'], 'CA1_pyr_spikemon.npz'), cell_id=np.array(id_spikes_pyr), t_spike=np.array(t_spikes_pyr))
     np.savez(os.path.join(dirs['data'], 'CA1_bc_spikemon.npz'), cell_id=np.array(id_spikes_bc), t_spike=np.array(t_spikes_bc))
     np.savez(os.path.join(dirs['data'], 'CA1_olm_spikemon.npz'), cell_id=np.array(id_spikes_olm), t_spike=np.array(t_spikes_olm))
 
-    # stim_loc_pyr = np.abs(ca1_pyr_coords[:,5] - settings.stim_pos[0]).argmin()
-    # stim_loc_bc = np.abs(ca1_bc_coords[:,5] - settings.stim_pos[0]).argmin()
+    inputs = [np.array(inputs_theta[0])]
 
-    save_raster(os.path.join(dirs['figures'], 'raster_plot.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
-                    [id_spikes_pyr, id_spikes_bc, id_spikes_olm], 
-                    ['C0', 'C3', 'C1'], ['pyramidal cells', 'basket cells', 'olm cells'],
-                    x_lim=[0, settings.duration], #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
-                    **git_kwargs)
-    
-    save_raster(os.path.join(dirs['figures'], 'raster_plot_last_second.png'), [t_spikes_pyr, t_spikes_bc, t_spikes_olm],
-                [id_spikes_pyr, id_spikes_bc, id_spikes_olm], 
-                ['C0', 'C3', 'C1'], ['pyramidal cells', 'basket cells', 'olm cells'],
-                x_lim=[settings.stim_onset - 600, settings.stim_onset + settings.stim_dur + 600], size_raster=1., #stim_loc=[stim_loc_pyr, n_pyr_ca1+stim_loc_bc],
-                **git_kwargs) # last second
+    if settings.stim_status:
+        if settings.stim_electrode == "bipolar":
+            stim_loc_pyr0 = np.sqrt((ca1_pyr_coords[:,0] - settings.stim_pos[0][0])**2+(ca1_pyr_coords[:,1] - settings.stim_pos[0][1])**2).argmin()
+            stim_loc_pyr1 = np.sqrt((ca1_pyr_coords[:,0] - settings.stim_pos[1][0])**2+(ca1_pyr_coords[:,1] - settings.stim_pos[1][1])**2).argmin()
+            stim_loc_bc0 = np.sqrt((ca1_bc_coords[:,0] - settings.stim_pos[0][0])**2+(ca1_bc_coords[:,1] - settings.stim_pos[0][1])**2).argmin()+len(ca1_pyr_coords)
+            stim_loc_bc1 = np.sqrt((ca1_bc_coords[:,0] - settings.stim_pos[1][0])**2+(ca1_bc_coords[:,1] - settings.stim_pos[1][1])**2).argmin()+len(ca1_pyr_coords)
 
-    np.savez(os.path.join(dirs['data'], 'ramp_input.npz'), t=np.array(t_vec), amplitude=np.array(stim_amp))
+            stim_locs = [stim_loc_pyr0, stim_loc_pyr1, stim_loc_bc0, stim_loc_bc1]
+        else:
+            stim_loc_pyr = np.sqrt((ca1_pyr_coords[:,0] - settings.stim_pos[0])**2+(ca1_pyr_coords[:,1] - settings.stim_pos[1])**2).argmin()
+            stim_loc_bc = np.sqrt((ca1_bc_coords[:,0] - settings.stim_pos[0])**2+(ca1_bc_coords[:,1] - settings.stim_pos[1])**2).argmin()+len(ca1_pyr_coords)
+
+            stim_locs = [stim_loc_pyr, stim_loc_bc]
+
+        save_raster(name_fig=os.path.join(dirs['figures'], 'raster_plot.png'), t_spike_monitors=[t_spikes_pyr, t_spikes_bc, t_spikes_olm],
+                        id_spike_monitors=[id_spikes_pyr, id_spikes_bc, id_spikes_olm], t_input=np.array(t_vec), id_inputs=inputs, 
+                        colors=['C0', 'C3', 'C1'], cell_types=['pyramidal cells', 'basket cells', 'olm cells'],
+                        x_lim=[0, settings.duration],
+                        stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs,
+                        sizebar=False, **git_kwargs)
+        
+        save_raster(name_fig=os.path.join(dirs['figures'], 'raster_plot_around_stim.png'), t_spike_monitors=[t_spikes_pyr, t_spikes_bc, t_spikes_olm],
+                    id_spike_monitors=[id_spikes_pyr, id_spikes_bc, id_spikes_olm], t_input=np.array(t_vec), id_inputs=inputs,
+                    colors=['C0', 'C3', 'C1'], cell_types=['pyramidal cells', 'basket cells', 'olm cells'],
+                    x_lim=[settings.stim_onset - 600, settings.stim_onset+settings.stim_dur+1000], size_raster=1., 
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, stim_loc=stim_locs, sizebar=False,
+                    **git_kwargs) # around_stim
+
+    else:
+        save_raster(name_fig=os.path.join(dirs['figures'], 'raster_plot.png'), t_spike_monitors=[t_spikes_pyr, t_spikes_bc, t_spikes_olm],
+                        id_spike_monitors=[id_spikes_pyr, id_spikes_bc, id_spikes_olm], t_input=np.array(t_vec), id_inputs=inputs,
+                        colors=['C0', 'C3', 'C1'], cell_types=['pyramidal cells', 'basket cells', 'olm cells'],
+                        x_lim=[0, settings.duration],
+                        stim_time=settings.stim_onset, stim_dur=settings.stim_dur, sizebar=False,
+                        **git_kwargs)
+        
+        save_raster(name_fig=os.path.join(dirs['figures'], 'raster_plot_around_stim.png'), t_spike_monitors=[t_spikes_pyr, t_spikes_bc, t_spikes_olm],
+                    id_spike_monitors=[id_spikes_pyr, id_spikes_bc, id_spikes_olm], t_input=np.array(t_vec), id_inputs=inputs,
+                    colors=['C0', 'C3', 'C1'], cell_types=['pyramidal cells', 'basket cells', 'olm cells'],
+                    x_lim=[settings.stim_onset - 600, settings.stim_onset+settings.stim_dur+1000], size_raster=1., 
+                    stim_time=settings.stim_onset, stim_dur=settings.stim_dur, sizebar=False,
+                    **git_kwargs) # around stim
+
+    # np.savez(os.path.join(dirs['data'], 'ramp_input.npz'), t=np.array(t_vec), amplitude=np.array(stim_amp))
     np.savez(os.path.join(dirs['data'], 'i_noise.npz'), t=np.array(t_vec), noise=np.array(i_noise))
+    np.savez(os.path.join(dirs['data'], 'stimulation.npz'), t=np.array(stim_time), amp=np.array(stim_amp))
 
     # fig2, ax2 = plt.subplots(1,1,figsize=(9,3))
     # ax2.plot(np.array(t_vec), np.array(osc_amp), color='red')
@@ -1004,14 +1041,14 @@ if rank == 0:
     # plot_watermark(fig2, **git_kwargs)
     # plt.savefig(os.path.join(dirs['figures'], 'theta_input.png'), bbox_inches="tight")
 
-    fig3, ax3 = plt.subplots(1,1,figsize=(9,3))
-    ax3.plot(np.array(t_vec), np.array(i_noise), color='black')
-    ax3.set_xlabel("Time (ms)")
-    ax3.set_ylabel("nA")
-    plot_watermark(fig3, **git_kwargs)
-    plt.savefig(os.path.join(dirs['figures'], 'i_noise.png'), bbox_inches="tight")
-    plt.clf()
-    plt.close()
+    # fig3, ax3 = plt.subplots(1,1,figsize=(9,3))
+    # ax3.plot(np.array(t_vec), np.array(i_noise), color='black')
+    # ax3.set_xlabel("Time (ms)")
+    # ax3.set_ylabel("nA")
+    # plot_watermark(fig3, **git_kwargs)
+    # plt.savefig(os.path.join(dirs['figures'], 'i_noise.png'), bbox_inches="tight")
+    # plt.clf()
+    # plt.close()
 
     print("[+] Saving data done !")
     print("[+] Resizing vectors")
