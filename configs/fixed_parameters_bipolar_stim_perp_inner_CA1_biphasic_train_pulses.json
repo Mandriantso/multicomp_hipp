@@ -234,14 +234,21 @@
     },
     "stimulation": {
         "status": true,
-        "electrode": "monopolar",
+        "electrode": "bipolar",
         "type": "train_pulses",
         "waveform": "biphasic",
         "target": "CA1",
         "coordinates": [
-            1335.02,
-            5506.92,
-            0.0
+            [
+                2718.83,
+                2845.14,
+                0.0
+            ],
+            [
+                3410.74,
+                1514.26,
+                0.0
+            ]
         ],
         "rho": 300,
         "duration": 2000,
@@ -274,7 +281,7 @@
         }
     },
     "git_short_hash": "4d91748",
-    "timestamp": "Fri Feb 13 20:34:14 2026",
+    "timestamp": "Fri Feb 13 18:39:02 2026",
     "git_branch": "main",
     "git_hash": "4d917480ab2b32d0281b706f1d90462fcd77fcea"
 }

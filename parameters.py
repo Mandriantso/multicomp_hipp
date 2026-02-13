@@ -251,13 +251,13 @@ _data = {
         "target": "CA1",
         "coordinates": [
             [
-                265.02,
-                4721.37,
+                1335.02,
+                5506.92,
                 0.0
             ],
             [
-                2337.461,
-                5886.57,
+                643.11,
+                6837.81,
                 0.0
             ]
         ],
@@ -267,7 +267,7 @@ _data = {
         "I": 6, # (mA) stimulation amplitude
         "pulse_width": 0.300, #ms
         "interphase": 0.100, # ms
-        "frequency": 130, # Hz
+        "frequency": 50, # Hz
         "n_pulses": None, # number of pulses within burst
         "theta_frequency": None # Hz
 
@@ -377,7 +377,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='fixed_parameters_bipolar_stim_par_CA1_biphasic_train_pulses',
+                        default='fixed_parameters_bipolar_stim_perp_outer_CA1_biphasic_train_pulses',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
