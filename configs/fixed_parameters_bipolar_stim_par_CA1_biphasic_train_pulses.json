@@ -256,7 +256,9 @@
         "I": 6,
         "pulse_width": 0.3,
         "interphase": 0.1,
-        "frequency": 130
+        "frequency": 130,
+        "n_pulses": null,
+        "theta_frequency": null
     },
     "simulation": {
         "duration": 5000.0,
@@ -278,8 +280,8 @@
             "vmax": 1.0
         }
     },
-    "git_short_hash": "dd690b4",
-    "timestamp": "Thu Feb 12 18:02:00 2026",
+    "git_short_hash": "26e4447",
+    "timestamp": "Fri Feb 13 13:44:58 2026",
     "git_branch": "main",
-    "git_hash": "dd690b41a0fd88909f42e50376b1dc73e8ad84a0"
+    "git_hash": "26e44470baf898bf599c79a7efdbf46ba7b5f748"
 }
