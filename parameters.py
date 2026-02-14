@@ -251,15 +251,15 @@ _data = {
         "target": "CA1",
         "coordinates": [
             [
-                1335.02,
-                5506.92,
+                2000.46,
+                5852.87,
                 0.0
             ],
             [
-                643.11,
-                6837.81,
+                669.57,
+                5160.97,
                 0.0
-            ]
+            ],
         ],
         "rho": 300, # medium resistivity (ohm cm)
         "duration": 2000, # (ms) 
@@ -377,7 +377,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='fixed_parameters_bipolar_stim_perp_outer_CA1_biphasic_train_pulses',
+                        default='fixed_parameters_bipolar_stim_par_outer_CA1_biphasic_train_pulses',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
