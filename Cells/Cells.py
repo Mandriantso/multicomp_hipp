@@ -462,7 +462,7 @@ class PyramidalCell(Cell):
 
     def _insert_channels(self):
         for sec in self.somatic:
-            # sec.insert("ch_HCNp")
+            sec.insert("ch_HCNp")
             sec.insert("ch_Navp")
             sec.insert("ch_Kdrp")
             sec.insert("ch_KvAproxp")
@@ -477,7 +477,7 @@ class PyramidalCell(Cell):
         for sec in self.apical:
             sec.insert("pas")
             if sec.diam > 0.5 and h.distance(self.soma(0.5), sec(0.5) < 500):
-                # sec.insert("ch_HCNp")
+                sec.insert("ch_HCNp")
                 sec.insert("ch_Navp")
                 sec.insert("ch_Kdrp")
                 sec.insert("ch_KvAproxp")
@@ -525,8 +525,8 @@ class PyramidalCell(Cell):
             sec.Ra = RaSoma
             sec.cm = CmSoma
             for seg in sec:
-                # seg.ch_HCNp.gmax = gHCN
-                # seg.ch_HCNp.vhalfl = -82
+                seg.ch_HCNp.gmax = gHCN
+                seg.ch_HCNp.vhalfl = -82
                 seg.ch_Navp.gmax = gNav
                 seg.ch_Navp.ar2 = 1
                 seg.ch_Kdrp.gmax = gKdr
@@ -554,7 +554,7 @@ class PyramidalCell(Cell):
                 seg.pas.g = 1/RmDend
             if sec.diam > 0.5 and h.distance(self.soma(0.5), sec(0.5)) < 500:
                 for seg in sec:
-                    # seg.ch_HCNp.gmax = gHCN
+                    seg.ch_HCNp.gmax = gHCN
                     seg.ch_Navp.ar2 = 0.8
                     seg.ch_Navp.gmax = gNav
                     seg.ch_Kdrp.gmax = gKdr
@@ -564,13 +564,13 @@ class PyramidalCell(Cell):
                     xdist = h.distance(self.soma(0.5), sec(seg.x))
                     if xdist > 500:
                         xdist = 500
-                    # seg.ch_HCNp.gmax = gHCN*(1+1.5*xdist/100)
+                    seg.ch_HCNp.gmax = gHCN*(1+1.5*xdist/100)
 
                     if xdist > 100:
-                        # seg.ch_HCNp.vhalfl = -90
+                        seg.ch_HCNp.vhalfl = -90
                         seg.ch_KvAdistp.gmax = gKvAdist*(1+xdist/100)
                     else:
-                        # seg.ch_HCNp.vhalfl = -82
+                        seg.ch_HCNp.vhalfl = -82
                         seg.ch_KvAproxp.gmax = gKvAprox*(1+xdist/100)
 
         for sec in self.axonal:
