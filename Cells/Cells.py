@@ -1,7 +1,7 @@
 from neuron import h
 from neuron.units import ms, mV
 import numpy as np
-from Scripts.anatomy import *
+# from Scripts.anatomy import *
 from collections import OrderedDict
 
 h.nrn_load_dll('Mods/nrnmech.dll')
@@ -31,10 +31,10 @@ class Cell():
         self._setup_biophysics()
 
         # position
-        if not isinstance(self, SchafferCollateral):
-            self.x = self.y = self.z = 0
-            self._set_position(x, y, z)
-            self._rotate_z(theta)
+        # if not isinstance(self, SchafferCollateral):
+        self.x = self.y = self.z = 0
+        self._set_position(x, y, z)
+        self._rotate_z(theta)
 
         self.x_intrinsic = x_intrinsic
         self.y_intrinsic = y_intrinsic
@@ -462,7 +462,7 @@ class PyramidalCell(Cell):
 
     def _insert_channels(self):
         for sec in self.somatic:
-            sec.insert("ch_HCNp")
+            # sec.insert("ch_HCNp")
             sec.insert("ch_Navp")
             sec.insert("ch_Kdrp")
             sec.insert("ch_KvAproxp")
@@ -477,7 +477,7 @@ class PyramidalCell(Cell):
         for sec in self.apical:
             sec.insert("pas")
             if sec.diam > 0.5 and h.distance(self.soma(0.5), sec(0.5) < 500):
-                sec.insert("ch_HCNp")
+                # sec.insert("ch_HCNp")
                 sec.insert("ch_Navp")
                 sec.insert("ch_Kdrp")
                 sec.insert("ch_KvAproxp")
