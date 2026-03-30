@@ -192,8 +192,8 @@ _data = {
             }, # TODO : weights
             "CA1": {
                 "syn_distance": { # µm
-                    "Pyramidal": 216.68 * 1.5, #500,
-                    "Basket": 176.22 * 1.5, #470,
+                    "Pyramidal": 500,
+                    "Basket": 470,
                     "OLM": 1057.695
                 },
                 "weight": { # µS
@@ -225,7 +225,7 @@ _data = {
         "inter": {
             "CA3-CA1":{
                 "syn_distance": 206.11 * 1.5,
-                "weight": 0.009 * 2.4
+                "weight": 0.009 # * 2.4
             }
         } # TODO
     },
@@ -244,32 +244,22 @@ _data = {
         }
     },
     "stimulation": {
-        "status": True, # False -> no stimulation; True -> stimulation is on
-        "electrode": "bipolar",
-        "type": "train_pulses",
-        "waveform": "biphasic",    
+        "status": False, # False -> no stimulation; True -> stimulation is on
+        "electrode": "",
+        "type": "",
+        "waveform": "",    
         "target": "CA1",
         "coordinates": [
-            [
-                2000.46,
-                5852.87,
-                0.0
-            ],
-            [
-                669.57,
-                5160.97,
-                0.0
-            ],
         ],
         "rho": 300, # medium resistivity (ohm cm)
-        "duration": 2000, # (ms) 
-        "onset": 2000, # (ms) 
-        "I": 6, # (mA) stimulation amplitude
-        "pulse_width": 0.300, #ms
-        "interphase": 0.100, # ms
-        "frequency": 50, # Hz
-        "n_pulses": None, # number of pulses within burst
-        "theta_frequency": None # Hz
+        "duration": 0, # (ms) 
+        "onset": 0, # (ms) 
+        "I": 0, # (mA) stimulation amplitude
+        "pulse_width": 0, #ms
+        "interphase": 0, # ms
+        "frequency": 0, # Hz
+        "n_pulses": 0, # number of pulses within burst
+        "theta_frequency": 0 # Hz
 
     },
     "simulation": {
@@ -377,7 +367,7 @@ if __name__  == "__main__":
     parser = argparse.ArgumentParser(
         description='Generate parameters file using JSON format')
     parser.add_argument('parameters_file',
-                        default='fixed_parameters_bipolar_stim_par_outer_CA1_biphasic_train_pulses',
+                        default='param_search_sca',
                         type=str, nargs='?',
                         help='Parameters file (json format)')
     args = parser.parse_args()
